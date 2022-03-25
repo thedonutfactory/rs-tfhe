@@ -1,0 +1,22 @@
+[package]
+name = "rs_tfhe"
+version = "0.1.0"
+authors = ["Jay Logelin <jay.logelin@gmail.com>", "Naoki Matsumoto <m.naoki9911@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.7.3"
+rand_distr = "0.3.0"
+
+[build-dependencies]
+cc = "1.0.65"
+
+[dev-dependencies]
+core_extensions = "^1.5"
+
+[features]
+bootstrapping = []
+
+default = ["bootstrapping"]
