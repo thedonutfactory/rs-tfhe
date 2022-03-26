@@ -18,5 +18,7 @@ core_extensions = "^1.5"
 
 [features]
 bootstrapping = []
+fft_avx = []
+fft_fma = []
 
-default = ["bootstrapping"]
+default = ["bootstrapping", "fft_fma"]
