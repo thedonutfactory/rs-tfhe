@@ -7,6 +7,7 @@ use crate::trlwe::sample_extract_index;
 use crate::utils;
 use crate::utils::Ciphertext;
 
+#[allow(dead_code)]
 pub fn hom_nand(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -26,6 +27,7 @@ pub fn hom_nand(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_or(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -44,6 +46,7 @@ pub fn hom_or(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_and(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -62,6 +65,7 @@ pub fn hom_and(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_xor(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -80,6 +84,7 @@ pub fn hom_xor(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_xnor(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -98,14 +103,17 @@ pub fn hom_xnor(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_not(tlwe_a: &Ciphertext) -> Ciphertext {
     -(*tlwe_a)
 }
 
+#[allow(dead_code)]
 pub fn hom_copy(tlwe_a: &Ciphertext) -> Ciphertext {
     tlwe_a.clone()
 }
 
+#[allow(dead_code)]
 pub fn hom_constant(value: bool) -> Ciphertext {
     let mut mu: Torus = utils::f64_to_torus(0.125);
     mu = if value { mu } else { 1 - mu };
@@ -114,6 +122,7 @@ pub fn hom_constant(value: bool) -> Ciphertext {
     return res;
 }
 
+#[allow(dead_code)]
 pub fn hom_nor(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -132,6 +141,7 @@ pub fn hom_nor(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_and_ny(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -150,6 +160,7 @@ pub fn hom_and_ny(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_and_yn(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -168,6 +179,7 @@ pub fn hom_and_yn(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_or_ny(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,
@@ -186,6 +198,7 @@ pub fn hom_or_ny(
     }
 }
 
+#[allow(dead_code)]
 pub fn hom_or_yn(
     tlwe_a: &Ciphertext,
     tlwe_b: &Ciphertext,

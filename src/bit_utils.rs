@@ -35,7 +35,6 @@ pub trait AsBits<T> {
 
 impl AsBits<u8> for u8 {
   fn to_bits(self) -> Vec<bool> {
-    let a = u32::try_from(self).unwrap();
     return to_bits(usize::try_from(self).unwrap(), 8).to_vec();
   }
 

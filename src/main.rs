@@ -87,8 +87,8 @@ fn main() {
     let secret_key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&secret_key, &mut fft_plan);
     // inputs
-    let a: u16 = 38402;
-    let b: u16 = 22304;
+    let a: u16 = 402;
+    let b: u16 = 304;
 
     let a_pt = a.to_bits();
     let b_pt = b.to_bits();
@@ -109,14 +109,14 @@ fn main() {
     // ----------------- SERVER SIDE -----------------
     // Use the server public key to add the a and b ciphertexts
     let (c3, cin) = add(&cloud_key, &c1, &c2, cin, &mut fft_plan);
-    //let (c3, cin) = sub(&cloud_key, &c3, &c2, cin, &mut fft_plan);
-    //let (c3, cin) = add(&cloud_key, &c3, &c2, cin, &mut fft_plan);
+    let (c3, cin) = add(&cloud_key, &c3, &c2, cin, &mut fft_plan);
+    let (c3, cin) = add(&cloud_key, &c3, &c2, cin, &mut fft_plan);
     // -------------------------------------------------
 
     // Use the client secret key to decrypt the ciphertext of the sum
     const BITS: u16 = 16;
     const ADD_GATES_COUNT: u16 = 5;
-    const NUM_OPS: u16 = 1;
+    const NUM_OPS: u16 = 3;
     let try_num = BITS * ADD_GATES_COUNT * NUM_OPS;
     let end = start.elapsed();
     let exec_ms_per_gate = end.as_millis() as f64 / try_num as f64;
