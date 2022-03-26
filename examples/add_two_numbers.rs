@@ -110,7 +110,7 @@ fn main() {
   // Use the client secret key to decrypt the ciphertext of the sum
   const BITS: u16 = 16;
   const ADD_GATES_COUNT: u16 = 5;
-  const NUM_OPS: u16 = 3;
+  const NUM_OPS: u16 = 1;
   let try_num = BITS * ADD_GATES_COUNT * NUM_OPS;
   let end = start.elapsed();
   let exec_ms_per_gate = end.as_millis() as f64 / try_num as f64;
@@ -121,13 +121,13 @@ fn main() {
     .iter()
     .map(|x| decrypt(x, &secret_key))
     .collect::<Vec<bool>>();
+
   // Use the client secret key to decrypt the ciphertext of the carry
   let carry_pt = decrypt(&cin, &secret_key);
   println!("Carry: {:?}", carry_pt);
 
   // Convert Boolean tuples to integers and check result
-  // Most Significant Bit in position 0, Least Significant Bit in position 3
-
+  // Most Significant Bit in position 0, Least Significant Bit in position 
   let a = convert::<u16>(&a_pt);
   println!("A: {}", a);
 
