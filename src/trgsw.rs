@@ -391,7 +391,7 @@ mod tests {
     let mut rng = rand::thread_rng();
     let mut plan = mulfft::FFTPlan::new(N);
     let key = key::SecretKey::new();
-    let cloud_key = key::CloudKey::new(&key, &mut plan);
+    let cloud_key = key::CloudKey::new(&key);
 
     let try_num = 10;
     for _i in 0..try_num {
@@ -407,11 +407,9 @@ mod tests {
 
   #[test]
   fn test_identity_key_switching() {
-    const N: usize = params::trgsw_lv1::N;
     let mut rng = rand::thread_rng();
     let key = key::SecretKey::new();
-    let mut plan = mulfft::FFTPlan::new(N);
-    let cloud_key = key::CloudKey::new(&key, &mut plan);
+    let cloud_key = key::CloudKey::new(&key);
 
     let try_num = 100;
     for _i in 0..try_num {

@@ -1,14 +1,15 @@
-use crate::mulfft;
 use crate::params;
 use crate::tlwe;
 use crate::trgsw;
 use crate::trlwe;
 use crate::utils;
+use crate::mulfft::FFTPlan;
 use rand::Rng;
 
 const TRGSWLV1_N: usize = params::trgsw_lv1::N;
 const TRGSWLV1_IKS_T: usize = params::trgsw_lv1::IKS_T;
 const TRGSWLV1_BASE: usize = 1 << params::trgsw_lv1::BASEBIT;
+const POLYNOMIAL_SIZE: usize = 1024;
 
 pub type SecretKeyLv0 = [u32; params::tlwe_lv0::N];
 pub type SecretKeyLv1 = [u32; params::tlwe_lv1::N];
@@ -47,16 +48,17 @@ pub struct CloudKey {
 }
 
 impl CloudKey {
-  pub fn new(secret_key: &SecretKey, plan: &mut mulfft::FFTPlan) -> Self {
+  pub fn new(secret_key: &SecretKey) -> Self {
+    let mut plan = FFTPlan::new(POLYNOMIAL_SIZE);
+    let bk = gen_bootstrapping_key(secret_key, &mut plan);
     CloudKey {
       decomposition_offset: gen_decomposition_offset(),
       blind_rotate_testvec: gen_testvec(),
       key_switching_key: gen_key_switching_key(secret_key),
-      bootstrapping_key: gen_bootstrapping_key(secret_key, plan),
+      bootstrapping_key: bk,
     }
   }
 
-  #[cfg(test)]
   pub fn new_no_ksk() -> Self {
     CloudKey {
       decomposition_offset: gen_decomposition_offset(),
@@ -113,7 +115,7 @@ pub fn gen_key_switching_key(secret_key: &SecretKey) -> KeySwitchingKey {
 
 pub fn gen_bootstrapping_key(
   secret_key: &SecretKey,
-  plan: &mut mulfft::FFTPlan,
+  plan: &mut FFTPlan,
 ) -> BootstrappingKey {
   let mut res = vec![trgsw::TRGSWLv1FFT::new_dummy(); params::tlwe_lv0::N];
   res

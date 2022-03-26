@@ -2,7 +2,6 @@ use rs_tfhe::bit_utils::{convert, AsBits};
 use rs_tfhe::utils::Ciphertext;
 use rs_tfhe::key::CloudKey;
 use rs_tfhe::key::SecretKey;
-use rs_tfhe::mulfft::FFTPlan;
 use rs_tfhe::gates::*;
 use rs_tfhe::tlwe::TLWELv0;
 use rs_tfhe::params::*;
@@ -14,17 +13,17 @@ fn full_adder(
   ct_a: &Ciphertext,
   ct_b: &Ciphertext,
   ct_c: &Ciphertext,
-  fft_plan: &mut FFTPlan,
+  gates: &mut Gates,
 ) -> (Ciphertext, Ciphertext) {
   // tlwe_nand = trgsw::hom_nand(&ct_a, &ct_b, &server_key, &mut fft_plan);
 
-  let a_xor_b = hom_xor(ct_a, ct_b, server_key, fft_plan);
-  let a_and_b = hom_and(ct_a, ct_b, server_key, fft_plan);
-  let a_xor_b_and_c = hom_and(&a_xor_b, ct_c, server_key, fft_plan);
+  let a_xor_b = gates.hom_xor(ct_a, ct_b, server_key);
+  let a_and_b = gates.hom_and(ct_a, ct_b, server_key);
+  let a_xor_b_and_c = gates.hom_and(&a_xor_b, ct_c, server_key);
   // sum = (a xor b) xor c
-  let ct_sum = hom_xor(&a_xor_b, ct_c, server_key, fft_plan);
+  let ct_sum = gates.hom_xor(&a_xor_b, ct_c, server_key);
   // carry = (a and b) or ((a xor b) and c)
-  let ct_carry = hom_or(&a_and_b, &a_xor_b_and_c, server_key, fft_plan);
+  let ct_carry = gates.hom_or(&a_and_b, &a_xor_b_and_c, server_key);
   // return sum and carry
   (ct_sum, ct_carry)
 }
@@ -34,7 +33,7 @@ pub fn add(
   a: &Vec<Ciphertext>,
   b: &Vec<Ciphertext>,
   cin: Ciphertext,
-  fft_plan: &mut FFTPlan,
+  gates: &mut Gates,
 ) -> (Vec<Ciphertext>, Ciphertext) {
   assert_eq!(
     a.len(),
@@ -44,7 +43,7 @@ pub fn add(
   let mut result = Vec::with_capacity(a.len());
   let mut carry = cin;
   for i in 0..a.len() {
-    let (sum, c) = full_adder(server_key, &a[i], &b[i], &carry, fft_plan);
+    let (sum, c) = full_adder(server_key, &a[i], &b[i], &carry, gates);
     carry = c;
     result.push(sum);
   }
@@ -56,7 +55,7 @@ pub fn sub(
   a: &Vec<Ciphertext>,
   b: &Vec<Ciphertext>,
   cin: Ciphertext,
-  fft_plan: &mut FFTPlan,
+  gates: &mut Gates,
 ) -> (Vec<Ciphertext>, Ciphertext) {
   assert_eq!(
     a.len(),
@@ -66,8 +65,8 @@ pub fn sub(
 
   // WARNING: this function does not work as it is off by one
 
-  let not_b = b.iter().map(hom_not).collect::<Vec<Ciphertext>>();
-  add(server_key, a, &not_b, cin, fft_plan)
+  let not_b = b.iter().map(|a|gates.hom_not(a)).collect::<Vec<Ciphertext>>();
+  add(server_key, a, &not_b, cin, gates)
 }
 
 fn encrypt(x: bool, secret_key: &SecretKey) -> Ciphertext {
@@ -79,9 +78,12 @@ fn decrypt(x: &Ciphertext, secret_key: &SecretKey) -> bool {
 }
 
 fn main() {
-  let mut fft_plan = FFTPlan::new(1024);
+  //let mut fft_plan = FFTPlan::new(1024);
+
+  let mut gates = Gates::new();
   let secret_key = SecretKey::new();
-  let cloud_key = CloudKey::new(&secret_key, &mut fft_plan);
+  //let cloud_key = CloudKey::new(&secret_key, &mut fft_plan);
+  let cloud_key = CloudKey::new(&secret_key);
   // inputs
   let a: u16 = 402;
   let b: u16 = 304;
@@ -104,7 +106,7 @@ fn main() {
 
   // ----------------- SERVER SIDE -----------------
   // Use the server public key to add the a and b ciphertexts
-  let (c3, cin) = add(&cloud_key, &c1, &c2, cin, &mut fft_plan);
+  let (c3, cin) = add(&cloud_key, &c1, &c2, cin, &mut gates);
   // -------------------------------------------------
 
   // Use the client secret key to decrypt the ciphertext of the sum
