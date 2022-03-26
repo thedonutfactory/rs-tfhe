@@ -84,14 +84,14 @@ pub fn external_product_with_fft(
 
     const L: usize = params::trgsw_lv1::L;
     for i in 0..L * 2 {
-        let dec_fft = plan.spqlios.ifft_1024(&dec[i]);
+        let dec_fft = plan.ifft_1024(&dec[i]);
         fma_in_fd_1024(&mut out_a_fft, &dec_fft, &trgsw_fft.trlwe_fft[i].a);
         fma_in_fd_1024(&mut out_b_fft, &dec_fft, &trgsw_fft.trlwe_fft[i].b);
     }
 
     return trlwe::TRLWELv1 {
-        a: plan.spqlios.fft_1024(&out_a_fft),
-        b: plan.spqlios.fft_1024(&out_b_fft),
+        a: plan.fft_1024(&out_a_fft),
+        b: plan.fft_1024(&out_b_fft),
     };
 }
 
