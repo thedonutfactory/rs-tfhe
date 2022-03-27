@@ -196,16 +196,21 @@ impl Gates {
         *tlwe_and.b_mut() = tlwe_and.b().wrapping_add(utils::f64_to_torus(-0.125));
         let u1:&Ciphertext = &self.bootstrap_no_ksk(&tlwe_and, &cloud_key_no_ksk);
 
-        // and(not(a), c) -> nand(a, c)  
+        // and(not(a), c) -> nand(a, c) 
+        /*
         let mut tlwe_nand = -(tlwe_a + tlwe_c);
         *tlwe_nand.b_mut() = tlwe_nand.b().wrapping_add(utils::f64_to_torus(0.125));
-        let u2:&Ciphertext = &self.bootstrap_no_ksk(&tlwe_nand, &cloud_key_no_ksk);
+
+        */
+        let mut tlwe_and_ny = &-(*tlwe_a) + tlwe_c;
+        *tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-0.125));
+        let u2:&Ciphertext = &self.bootstrap_no_ksk(&tlwe_and_ny, &cloud_key_no_ksk);
         
         // or(u1, u2)
         let mut tlwe_or = u1 + u2;
         *tlwe_or.b_mut() = tlwe_or.b().wrapping_add(utils::f64_to_torus(0.125));
 
-        return tlwe_or; // self.bootstrap_no_ksk(&tlwe_or, &cloud_key_no_ksk);
+        return self.bootstrap_no_ksk(&tlwe_or, &cloud_key_no_ksk);
         
         /*
         #[cfg(feature = "bootstrapping")]
@@ -360,9 +365,9 @@ mod tests {
 
     let try_num = 10;
     for _i in 0..try_num {
-      let plain_a = rng.gen::<bool>();
-      let plain_b = rng.gen::<bool>();
-      let plain_c = rng.gen::<bool>();
+      let plain_a = true;  //rng.gen::<bool>();
+      let plain_b = false; //rng.gen::<bool>();
+      let plain_c = true; //rng.gen::<bool>();
       let expected = (plain_a & plain_b) | !(plain_a & plain_c);
 
       let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
@@ -372,6 +377,7 @@ mod tests {
       let dec = tlwe_op.decrypt_bool(&key.key_lv0);
       dbg!(plain_a);
       dbg!(plain_b);
+      dbg!(plain_c);
       dbg!(expected);
       dbg!(dec);
       assert_eq!(expected, dec);

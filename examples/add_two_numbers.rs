@@ -85,8 +85,8 @@ fn main() {
   //let cloud_key = CloudKey::new(&secret_key, &mut fft_plan);
   let cloud_key = CloudKey::new(&secret_key);
   // inputs
-  let a: u16 = 402;
-  let b: u16 = 304;
+  let a: u16 = 31402;
+  let b: u16 = 28304;
 
   let a_pt = a.to_bits();
   let b_pt = b.to_bits();
@@ -102,19 +102,20 @@ fn main() {
     .collect::<Vec<Ciphertext>>();
   let cin = encrypt(false, &secret_key);
 
+  // start timer
   let start = Instant::now();
-
   // ----------------- SERVER SIDE -----------------
   // Use the server public key to add the a and b ciphertexts
   let (c3, cin) = add(&cloud_key, &c1, &c2, cin, &mut gates);
   // -------------------------------------------------
-
-  // Use the client secret key to decrypt the ciphertext of the sum
-  const BITS: u16 = 16;
-  const ADD_GATES_COUNT: u16 = 5;
-  const NUM_OPS: u16 = 1;
-  let try_num = BITS * ADD_GATES_COUNT * NUM_OPS;
+  // stop time
   let end = start.elapsed();
+  
+  // Use the client secret key to decrypt the ciphertext of the sum
+  const BITS: u8 = 16;
+  const ADD_GATES_COUNT: u8 = 5;
+  const NUM_OPS: u8 = 1;
+  let try_num = BITS * ADD_GATES_COUNT * NUM_OPS;
   let exec_ms_per_gate = end.as_millis() as f64 / try_num as f64;
   println!("per gate: {} ms", exec_ms_per_gate);
   println!("total: {} ms", start.elapsed().as_millis());
