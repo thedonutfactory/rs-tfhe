@@ -1,4 +1,3 @@
-use crate::mulfft;
 use crate::params;
 use crate::tlwe;
 use crate::trgsw;
@@ -47,12 +46,12 @@ pub struct CloudKey {
 }
 
 impl CloudKey {
-  pub fn new(secret_key: &SecretKey, plan: &mut mulfft::FFTPlan) -> Self {
+  pub fn new(secret_key: &SecretKey) -> Self {
     CloudKey {
       decomposition_offset: gen_decomposition_offset(),
       blind_rotate_testvec: gen_testvec(),
       key_switching_key: gen_key_switching_key(secret_key),
-      bootstrapping_key: gen_bootstrapping_key(secret_key, plan),
+      bootstrapping_key: gen_bootstrapping_key(secret_key),
     }
   }
 
@@ -113,17 +112,19 @@ pub fn gen_key_switching_key(secret_key: &SecretKey) -> KeySwitchingKey {
 
 pub fn gen_bootstrapping_key(
   secret_key: &SecretKey,
-  plan: &mut mulfft::FFTPlan,
 ) -> BootstrappingKey {
-  let mut res = vec![trgsw::TRGSWLv1FFT::new_dummy(); params::tlwe_lv0::N];
-  res
-    .iter_mut()
-    .zip(secret_key.key_lv0.iter())
-    .for_each(|(rref, &kval)| {
-      *rref = trgsw::TRGSWLv1FFT::new(
-        &trgsw::TRGSWLv1::encrypt_torus(kval, params::BSK_ALPHA, &secret_key.key_lv1, plan),
-        plan,
-      )
-    });
-  res
+  crate::context::FFT_PLAN.with(|plan| {
+    let p = &mut plan.borrow_mut();
+    let mut res = vec![trgsw::TRGSWLv1FFT::new_dummy(); params::tlwe_lv0::N];
+    res
+      .iter_mut()
+      .zip(secret_key.key_lv0.iter())
+      .for_each(|(rref, &kval)| {
+        *rref = trgsw::TRGSWLv1FFT::new(
+          &trgsw::TRGSWLv1::encrypt_torus(kval, params::BSK_ALPHA, &secret_key.key_lv1, p),
+          p,
+        )
+      });
+    res
+  })
 }
