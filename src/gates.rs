@@ -197,7 +197,9 @@ pub fn mux(
   let mut tlwe_nand = -(tlwe_a + tlwe_c);
   *tlwe_nand.b_mut() = tlwe_nand.b().wrapping_add(utils::f64_to_torus(0.125));
   */
-  let mut tlwe_and_ny = &-(*tlwe_a) + tlwe_c;
+  // let mut tlwe_and_ny = &-(*tlwe_a) + tlwe_c;
+  
+  let mut tlwe_and_ny = &(not(tlwe_a)) + tlwe_c;
   *tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-0.125));
   let u2: &Ciphertext = &bootstrap_without_key_switch(&tlwe_and_ny, &cloud_key);
 
@@ -381,11 +383,11 @@ mod tests {
       let plain_a = rng.gen::<bool>();
       let plain_b = rng.gen::<bool>();
       let plain_c = rng.gen::<bool>();
-      let expected = (plain_a & plain_b) | ( (!plain_a) & plain_c);
+      let expected = (plain_a & plain_b) | ((!plain_a) & plain_c);
 
       let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
       let tlwe_b = Ciphertext::encrypt_bool(plain_b, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_c = Ciphertext::encrypt_bool(plain_b, params::tlwe_lv0::ALPHA, &key.key_lv0);
+      let tlwe_c = Ciphertext::encrypt_bool(plain_c, params::tlwe_lv0::ALPHA, &key.key_lv0);
       let tlwe_op = gates::mux_naive(&tlwe_a, &tlwe_b, &tlwe_c, &cloud_key);
       let dec = tlwe_op.decrypt_bool(&key.key_lv0);
       dbg!(plain_a);
