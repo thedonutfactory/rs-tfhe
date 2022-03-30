@@ -15,14 +15,14 @@ fn full_adder(
   ct_c: &Ciphertext,
 ) -> (Ciphertext, Ciphertext) {
   // tlwe_nand = trgsw::hom_nand(&ct_a, &ct_b, &server_key, &mut fft_plan);
-
-  let a_xor_b = hom_xor(ct_a, ct_b, server_key);
-  let a_and_b = hom_and(ct_a, ct_b, server_key);
-  let a_xor_b_and_c = hom_and(&a_xor_b, ct_c, server_key);
+  
+  let a_xor_b = xor(ct_a, ct_b, server_key);
+  let a_and_b = and(ct_a, ct_b, server_key);
+  let a_xor_b_and_c = and(&a_xor_b, ct_c, server_key);
   // sum = (a xor b) xor c
-  let ct_sum = hom_xor(&a_xor_b, ct_c, server_key);
+  let ct_sum = xor(&a_xor_b, ct_c, server_key);
   // carry = (a and b) or ((a xor b) and c)
-  let ct_carry = hom_or(&a_and_b, &a_xor_b_and_c, server_key);
+  let ct_carry = or(&a_and_b, &a_xor_b_and_c, server_key);
   // return sum and carry
   (ct_sum, ct_carry)
 }
@@ -62,7 +62,7 @@ pub fn sub(
 
   // WARNING: this function does not work as it is off by one
 
-  let not_b = b.iter().map(hom_not).collect::<Vec<Ciphertext>>();
+  let not_b = b.iter().map(not).collect::<Vec<Ciphertext>>();
   add(server_key, a, &not_b, cin)
 }
 

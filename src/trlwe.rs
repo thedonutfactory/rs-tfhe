@@ -112,6 +112,22 @@ pub fn sample_extract_index(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv1 {
   res
 }
 
+pub fn sample_extract_index_2(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv0 {
+  let mut res = tlwe::TLWELv0::new();
+
+  const N: usize = params::tlwe_lv0::N;
+  for i in 0..N {
+    if i <= k {
+      res.p[i] = trlwe.a[k - i];
+    } else {
+      res.p[i] = u32::MAX - trlwe.a[N + k - i];
+    }
+  }
+  *res.b_mut() = trlwe.b[k];
+
+  res
+}
+
 #[cfg(test)]
 mod tests {
   use crate::key;

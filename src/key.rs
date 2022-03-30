@@ -55,7 +55,6 @@ impl CloudKey {
     }
   }
 
-  #[cfg(test)]
   pub fn new_no_ksk() -> Self {
     CloudKey {
       decomposition_offset: gen_decomposition_offset(),
