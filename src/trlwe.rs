@@ -35,7 +35,7 @@ impl TRLWELv1 {
     trlwe.b = utils::gussian_f64_vec(p, &normal_distr, &mut rng)
       .try_into()
       .unwrap();
-    let poly_res = plan.spqlios.poly_mul_1024(&trlwe.a, key);
+    let poly_res = plan.poly_mul_1024(&trlwe.a, key);
 
     for (bref, rval) in trlwe.b.iter_mut().zip(poly_res.iter()) {
       *bref = bref.wrapping_add(*rval);
@@ -60,7 +60,7 @@ impl TRLWELv1 {
 
   #[allow(dead_code)]
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv1, plan: &mut mulfft::FFTPlan) -> Vec<bool> {
-    let poly_res = plan.spqlios.poly_mul_1024(&self.a, key);
+    let poly_res = plan.poly_mul_1024(&self.a, key);
     let mut res: Vec<bool> = Vec::new();
     for i in 0..self.a.len() {
       let value = (self.b[i].wrapping_sub(poly_res[i])) as i32;
@@ -83,8 +83,8 @@ pub struct TRLWELv1FFT {
 impl TRLWELv1FFT {
   pub fn new(trlwe: &TRLWELv1, plan: &mut mulfft::FFTPlan) -> TRLWELv1FFT {
     TRLWELv1FFT {
-      a: plan.spqlios.ifft_1024(&trlwe.a),
-      b: plan.spqlios.ifft_1024(&trlwe.b),
+      a: plan.ifft_1024(&trlwe.a),
+      b: plan.ifft_1024(&trlwe.b),
     }
   }
 

@@ -9,6 +9,8 @@ edition = "2021"
 [dependencies]
 rand = "0.7.3"
 rand_distr = "0.3.0"
+itertools = "0.9.0"
+rustfft = "6.0.1"
 
 [build-dependencies]
 cc = "1.0.65"
@@ -21,4 +23,4 @@ bootstrapping = []
 fft_avx = []
 fft_fma = []
 
-default = ["bootstrapping", "fft_fma"]
+default = ["bootstrapping"]
