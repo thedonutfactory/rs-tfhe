@@ -1,4 +1,3 @@
-use crate::fft::DefaultFFTProcessor;
 use crate::fft::FFTProcessor;
 use crate::key;
 use crate::mulfft;

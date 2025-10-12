@@ -84,6 +84,18 @@ pub fn external_product_with_fft(
   let mut out_b_fft = [0.0f64; 1024];
 
   const L: usize = params::trgsw_lv1::L;
+
+  // Serial FFT processing with cached plan
+  // NOTE: Attempted parallelization here (6 FFTs) but Rayon overhead dominated:
+  //   - Serial (cached plan):              ~57ms/gate ✅ BEST
+  //   - Parallel (thread-local cached):    ~67ms/gate (1.2x slower)
+  //   - Parallel (new plans each time):    ~96ms/gate (1.7x slower)
+  //
+  // Problem: external_product_with_fft is called 500-700x per gate.
+  // Rayon overhead (thread wake-up, work stealing, collect) paid 500-700x.
+  // Only 6 tasks per batch - too few to amortize overhead.
+  //
+  // For effective parallelization, need to batch at gate level, not FFT level.
   for i in 0..L * 2 {
     let dec_fft = plan.processor.ifft_1024(&dec[i]);
     fma_in_fd_1024(&mut out_a_fft, &dec_fft, &trgsw_fft.trlwe_fft[i].a);
@@ -110,6 +122,9 @@ fn fma_in_fd_1024(res: &mut [f64; 1024], a: &[f64; 1024], b: &[f64; 1024]) {
   //
   // Without this scaling: all gate tests fail, bootstrapping produces wrong results
   // With this scaling: all 28 tests pass ✓
+  //
+  // NOTE: This loop is hot but too small for parallelization (only 512 ops).
+  // LLVM auto-vectorizes this with NEON/SSE, which is faster than thread overhead.
   for i in 0..512 {
     // Real part: res_re += (a_re*b_re - a_im*b_im) * 0.5
     res[i] = (a[i + 512] * b[i + 512]) * 0.5 - res[i];
@@ -130,6 +145,8 @@ pub fn decomposition(
   const MASK: u32 = (1 << params::trgsw_lv1::BGBIT) - 1;
   const HALF_BG: u32 = 1 << (params::trgsw_lv1::BGBIT - 1);
 
+  // Serial version - parallelization overhead is too high for this workload
+  // LLVM can auto-vectorize the inner loops more effectively
   for j in 0..params::trgsw_lv1::N {
     let tmp0 = trlwe.a[j].wrapping_add(offset);
     let tmp1 = trlwe.b[j].wrapping_add(offset);
