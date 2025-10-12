@@ -1,17 +1,17 @@
 use crate::spqlios;
 
 pub struct FFTPlan {
-    pub spqlios: spqlios::Spqlios,
-    pub n: usize,
+  pub spqlios: spqlios::Spqlios,
+  pub n: usize,
 }
 
 impl FFTPlan {
-    pub fn new(n: usize) -> FFTPlan {
-        FFTPlan {
-            spqlios: spqlios::Spqlios::new(n),
-            n,
-        }
+  pub fn new(n: usize) -> FFTPlan {
+    FFTPlan {
+      spqlios: spqlios::Spqlios::new(n),
+      n,
     }
+  }
 }
 
 #[cfg(test)]
