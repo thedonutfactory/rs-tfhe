@@ -84,11 +84,29 @@ This provides ~5-10% performance improvement over generic ARM64 compilation.
 
 All features work correctly! The implementation passes **all 28 unit tests** with 100% success rate.
 
-# Run the example
+# Run Examples and Benchmarks
+
+## Run the homomorphic addition example
 
 ```bash
 cargo run --example add_two_numbers --release
 ```
+
+## Run performance benchmarks
+
+```bash
+# Run all benchmarks with Criterion
+cargo bench --bench gate_benchmarks
+
+# View HTML reports
+open target/criterion/report/index.html
+```
+
+**Benchmark results on ARM64:**
+- Binary gates (NAND, AND, OR, etc.): **~106ms per gate**
+- MUX gate: ~317ms
+- FFT operations: ~20µs per 1024-point transform
+- Bootstrapping: ~104ms (core operation)
 
 **Note for ARM64 Users**: The RustFFT implementation is **fully functional and production-ready**! All 28 unit tests pass (100% success rate). 
 
@@ -106,3 +124,41 @@ cargo run --example add_two_numbers --release
 - ✅ All homomorphic gates (AND, OR, XOR, NAND, NOR, XNOR, MUX, etc.)
 - ✅ Key switching and external product
 - ✅ Full homomorphic addition example: 402 + 304 = 706 ✓
+
+---
+
+## Quick Reference
+
+### Essential Commands
+
+```bash
+# Build with NEON optimizations
+cargo build --release
+
+# Run all tests
+cargo test --release
+
+# Run benchmarks
+cargo bench --bench gate_benchmarks
+
+# Run example
+cargo run --example add_two_numbers --release
+
+# View benchmark reports
+open target/criterion/report/index.html
+```
+
+### Performance Summary (ARM64 + NEON)
+
+- **Binary gates**: ~106ms per gate
+- **MUX gate**: ~317ms
+- **FFT operations**: ~20µs per transform
+- **Throughput**: ~9.4 gates/second
+
+### Documentation
+
+- `IMPLEMENTATION_NOTES.md` - Technical details of negacyclic FFT
+- `BENCHMARK_RESULTS.md` - Detailed performance analysis
+- `NEON_OPTIMIZATIONS.md` - SIMD optimization details
+- `CUDA_ANALYSIS.md` - GPU acceleration feasibility
+- `REFACTORING.md` - Architecture documentation

@@ -71,3 +71,16 @@ pub type DefaultFFTProcessor = spqlios_fft::SpqliosFFT;
 
 #[cfg(not(target_arch = "x86_64"))]
 pub type DefaultFFTProcessor = rustfft_processor::RustFFTProcessor;
+
+// Future implementation ideas:
+//
+// pub mod cuda_fft;         // CUDA/cuFFT implementation (~10-20ms per gate, 50-100x batch)
+// pub mod metal_fft;        // Apple Metal GPU implementation (for iOS/macOS GPU)
+// pub mod wasm_fft;         // WebAssembly optimized version
+// pub mod neon_asm_fft;     // Hand-coded ARM NEON assembly (could match x86_64)
+//
+// Performance estimates:
+// - CUDA (cuFFT):        ~15ms per gate, 5-7x faster than ARM64
+// - CUDA (custom):       ~10ms per gate, 10x faster than ARM64, batch 50-100x
+// - Metal:               ~30-50ms per gate (GPU overhead on integrated GPUs)
+// - Hand-coded NEON asm: ~35-50ms per gate (could approach x86_64 performance)
