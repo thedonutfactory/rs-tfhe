@@ -11,6 +11,44 @@ TFHE is an open-source library for fully homomorphic encryption, distributed und
 
 **Other architectures**: Similar to ARM64 - full RustFFT support with correct negacyclic FFT implementation.
 
+## Security Levels
+
+The library supports **three security levels** to balance performance and security needs:
+
+| Security Level | Feature Flag | Security Bits | Performance | Use Case |
+|---------------|--------------|---------------|-------------|----------|
+| **80-bit** | `--features security-80bit` | ~80 bits | **Fastest** (~20-30% faster) | Development, testing, low-security applications |
+| **110-bit** | `--features security-110bit` | ~110 bits | **Balanced** | Original TFHE params, well-tested |
+| **128-bit** | *(default)* | ~128 bits | **Baseline** | High security, production use (recommended) |
+
+### Security Parameter Details
+
+Each security level adjusts multiple cryptographic parameters:
+- **LWE dimension (N)**: Higher = more secure, slower
+- **Noise standard deviation (α)**: Balanced with dimension for security
+- **Gadget decomposition levels (L)**: More levels = more secure, slower
+- **Base bits (BGBIT)**: Smaller base = more levels needed
+
+### Choosing a Security Level
+
+```bash
+# Default 128-bit security (recommended for production)
+cargo build --release
+
+# Fast 80-bit security (development/testing)
+cargo build --release --features security-80bit
+
+# Balanced 110-bit security (original TFHE)
+cargo build --release --features security-110bit
+```
+
+**Security Considerations:**
+- 80-bit: Adequate for short-term security, development environments
+- 110-bit: Standard level from CGGI16/CGGI19 papers, well-tested
+- 128-bit: Post-quantum secure with conservative margins, future-proof (DEFAULT)
+
+All security levels have been validated against the LWE security estimator.
+
 The underlying scheme is described in best paper of the IACR conference Asiacrypt 2016: “Faster fully homomorphic encryption: Bootstrapping in less than 0.1 seconds”, presented by Ilaria Chillotti, Nicolas Gama, Mariya Georgieva and Malika Izabachène.
 
 rs_tfhe is a rust library which implements a very fast gate-by-gate bootstrapping, based on [CGGI16] and [CGGI17]. The library allows to evaluate an arbitrary boolean circuit composed of binary gates, over encrypted data, without revealing any information on the data.

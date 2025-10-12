@@ -17,15 +17,19 @@
 /// - 3.5x slower than x86_64 AVX/FMA, but fully correct
 use super::FFTProcessor;
 use rustfft::num_complex::Complex;
+use rustfft::{Fft, FftPlanner};
+use std::sync::Arc;
 
 pub struct RustFFTProcessor {
   n: usize,
+  fft_2n: Arc<dyn Fft<f64>>,
 }
 
 impl FFTProcessor for RustFFTProcessor {
   fn new(n: usize) -> Self {
-    eprintln!("✓ Using RustFFT negacyclic FFT (portable pure Rust implementation)");
-    RustFFTProcessor { n }
+    let mut planner = FftPlanner::new();
+    let fft_2n = planner.plan_fft_forward(2 * n);
+    RustFFTProcessor { n, fft_2n }
   }
 
   fn ifft(&mut self, input: &[u32]) -> Vec<f64> {
@@ -73,6 +77,29 @@ impl FFTProcessor for RustFFTProcessor {
     self.execute_direct_torus32(&mut result, &tmp_a);
     result
   }
+
+  fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+    // Use ifft_1024/fft_1024 if size matches, otherwise use Vec variants
+    if a.len() == 1024 && b.len() == 1024 {
+      let a_arr: [u32; 1024] = a.as_slice().try_into().unwrap();
+      let b_arr: [u32; 1024] = b.as_slice().try_into().unwrap();
+      self.poly_mul_1024(&a_arr, &b_arr).to_vec()
+    } else {
+      let a_ifft = self.ifft(a);
+      let b_ifft = self.ifft(b);
+      let mut mul = vec![0.0f64; a.len()];
+
+      let ns = a.len() / 2;
+      for i in 0..ns {
+        let aimbim = a_ifft[i + ns] * b_ifft[i + ns];
+        let arebim = a_ifft[i] * b_ifft[i + ns];
+        mul[i] = (a_ifft[i] * b_ifft[i] - aimbim) * 0.5;
+        mul[i + ns] = (a_ifft[i + ns] * b_ifft[i] + arebim) * 0.5;
+      }
+
+      self.fft(&mul)
+    }
+  }
 }
 
 impl RustFFTProcessor {
@@ -109,11 +136,8 @@ impl RustFFTProcessor {
       buffer.push(Complex::new(-val, 0.0));
     }
 
-    // Step 2: Standard 2N-point FFT
-    use rustfft::FftPlanner;
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(nn);
-    fft.process(&mut buffer);
+    // Step 2: Standard 2N-point FFT (using cached plan)
+    self.fft_2n.process(&mut buffer);
 
     // Step 3: Extract odd indices (bins 1, 3, 5, ..., 1023)
     // These correspond to primitive 2N-th roots: ω, ω³, ω⁵, ...
@@ -156,11 +180,8 @@ impl RustFFTProcessor {
       buffer[idx] = Complex::new(input[i] * scale, -input[i + ns2] * scale);
     }
 
-    // 2N-point FFT
-    use rustfft::FftPlanner;
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(nn);
-    fft.process(&mut buffer);
+    // 2N-point FFT (using cached plan)
+    self.fft_2n.process(&mut buffer);
 
     // Extract with pattern: res[0] = z[0]/4, res[i] = -z[N-i]/4
     // The 0.25 factor accounts for the double-FFT structure

@@ -56,6 +56,10 @@ pub trait FFTProcessor {
   /// Negacyclic polynomial multiplication: a(X) * b(X) mod (X^N+1)
   /// Uses FFT for O(N log N) complexity instead of O(N²)
   fn poly_mul_1024(&mut self, a: &[u32; 1024], b: &[u32; 1024]) -> [u32; 1024];
+
+  /// Negacyclic polynomial multiplication for variable-length vectors
+  /// Fallback to poly_mul_1024 for 1024-sized inputs, otherwise uses Vec variants
+  fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32>;
 }
 
 // Platform-specific implementations

@@ -24,6 +24,12 @@ name = "gate_benchmarks"
 harness = false
 
 [features]
+# Security levels (mutually exclusive - 128-bit is default)
+security-80bit = []
+security-110bit = []
+security-128bit = []  # Not needed (default), but explicit for clarity
+
+# FFT implementations
 bootstrapping = []
 fft_avx = []
 fft_fma = []

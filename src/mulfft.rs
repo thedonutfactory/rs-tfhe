@@ -1,14 +1,15 @@
-use crate::spqlios;
+use crate::fft::{DefaultFFTProcessor, FFTProcessor};
+// use crate::spqlios;
 
 pub struct FFTPlan {
-  pub spqlios: spqlios::Spqlios,
+  pub processor: DefaultFFTProcessor,
   pub n: usize,
 }
 
 impl FFTPlan {
   pub fn new(n: usize) -> FFTPlan {
     FFTPlan {
-      spqlios: spqlios::Spqlios::new(n),
+      processor: DefaultFFTProcessor::new(n),
       n,
     }
   }
@@ -28,8 +29,8 @@ mod tests {
     let mut a: Vec<u32> = vec![0u32; n];
     a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
 
-    let a_fft = plan.spqlios.ifft(&a);
-    let res = plan.spqlios.fft(&a_fft);
+    let a_fft = plan.processor.ifft(&a);
+    let res = plan.processor.fft(&a_fft);
     for i in 0..n {
       let diff = a[i] as i32 - res[i] as i32;
       assert!(diff < 2 && diff > -2);
@@ -48,7 +49,7 @@ mod tests {
     b.iter_mut()
       .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
 
-    let spqlios_res = plan.spqlios.poly_mul(&a, &b);
+    let spqlios_res = plan.processor.poly_mul(&a, &b);
     let res = poly_mul(&a.to_vec(), &b.to_vec());
     for i in 0..n {
       let diff = res[i] as i64 - spqlios_res[i] as i64;
@@ -69,8 +70,8 @@ mod tests {
     // Delta function test
     let mut a = [0u32; 1024];
     a[0] = 1000;
-    let freq = plan.spqlios.ifft_1024(&a);
-    let res = plan.spqlios.fft_1024(&freq);
+    let freq = plan.processor.ifft_1024(&a);
+    let res = plan.processor.fft_1024(&freq);
     println!(
       "Delta: in[0]={}, out[0]={}, diff={}",
       a[0],
@@ -87,8 +88,8 @@ mod tests {
     let mut a = [0u32; 1024];
     a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
 
-    let a_fft = plan.spqlios.ifft_1024(&a);
-    let res = plan.spqlios.fft_1024(&a_fft);
+    let a_fft = plan.processor.ifft_1024(&a);
+    let res = plan.processor.fft_1024(&a_fft);
 
     let mut max_diff = 0i64;
     for i in 0..1024 {
@@ -123,7 +124,7 @@ mod tests {
       b.iter_mut()
         .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
 
-      let spqlios_res = plan.spqlios.poly_mul_1024(&a, &b);
+      let spqlios_res = plan.processor.poly_mul_1024(&a, &b);
       let res = poly_mul(&a.to_vec(), &b.to_vec());
       for i in 0..1024 {
         let diff = res[i] as i64 - spqlios_res[i] as i64;

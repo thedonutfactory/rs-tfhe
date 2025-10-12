@@ -109,9 +109,7 @@ pub fn gen_key_switching_key(secret_key: &SecretKey) -> KeySwitchingKey {
   res
 }
 
-pub fn gen_bootstrapping_key(
-  secret_key: &SecretKey,
-) -> BootstrappingKey {
+pub fn gen_bootstrapping_key(secret_key: &SecretKey) -> BootstrappingKey {
   crate::context::FFT_PLAN.with(|plan| {
     let p = &mut plan.borrow_mut();
     let mut res = vec![trgsw::TRGSWLv1FFT::new_dummy(); params::tlwe_lv0::N];
