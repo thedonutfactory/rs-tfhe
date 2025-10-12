@@ -1,6 +1,5 @@
-use crate::fft::FFTProcessor;
+use crate::fft::{FFTPlan, FFTProcessor, FFT_PLAN};
 use crate::key;
-use crate::mulfft;
 use crate::params;
 use crate::tlwe;
 use crate::trlwe;
@@ -19,12 +18,7 @@ impl TRGSWLv1 {
     }
   }
 
-  pub fn encrypt_torus(
-    p: u32,
-    alpha: f64,
-    key: &key::SecretKeyLv1,
-    plan: &mut mulfft::FFTPlan,
-  ) -> Self {
+  pub fn encrypt_torus(p: u32, alpha: f64, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Self {
     let mut p_f64: Vec<f64> = Vec::new();
     const L: usize = params::trgsw_lv1::L;
     for i in 0..L {
@@ -53,7 +47,7 @@ pub struct TRGSWLv1FFT {
 }
 
 impl TRGSWLv1FFT {
-  pub fn new(trgsw: &TRGSWLv1, plan: &mut mulfft::FFTPlan) -> TRGSWLv1FFT {
+  pub fn new(trgsw: &TRGSWLv1, plan: &mut FFTPlan) -> TRGSWLv1FFT {
     return TRGSWLv1FFT {
       trlwe_fft: trgsw
         .trlwe
@@ -76,7 +70,7 @@ pub fn external_product_with_fft(
   trgsw_fft: &TRGSWLv1FFT,
   trlwe: &trlwe::TRLWELv1,
   cloud_key: &key::CloudKey,
-  plan: &mut mulfft::FFTPlan,
+  plan: &mut FFTPlan,
 ) -> trlwe::TRLWELv1 {
   let dec = decomposition(trlwe, cloud_key);
 
@@ -168,7 +162,7 @@ pub fn cmux(
   in2: &trlwe::TRLWELv1,
   cond: &TRGSWLv1FFT,
   cloud_key: &key::CloudKey,
-  plan: &mut mulfft::FFTPlan,
+  plan: &mut FFTPlan,
 ) -> trlwe::TRLWELv1 {
   let mut tmp = trlwe::TRLWELv1::new();
   const N: usize = params::trgsw_lv1::N;
@@ -188,7 +182,7 @@ pub fn cmux(
 }
 
 pub fn blind_rotate(src: &tlwe::TLWELv0, cloud_key: &key::CloudKey) -> trlwe::TRLWELv1 {
-  crate::context::FFT_PLAN.with(|plan| {
+  FFT_PLAN.with(|plan| {
     const N: usize = params::trgsw_lv1::N;
     const NBIT: usize = params::trgsw_lv1::NBIT;
     let b_tilda = 2 * N - (((src.b() as usize) + (1 << (31 - NBIT - 1))) >> (32 - NBIT - 1));
@@ -272,8 +266,8 @@ pub fn identity_key_switching(
 
 #[cfg(test)]
 mod tests {
+  use crate::fft::FFTPlan;
   use crate::key;
-  use crate::mulfft;
   use crate::params;
   use crate::tlwe;
   use crate::trgsw::*;
@@ -289,7 +283,7 @@ mod tests {
     // Generate 1024bits secret key
     let key = key::SecretKey::new();
 
-    let mut plan = mulfft::FFTPlan::new(N);
+    let mut plan = FFTPlan::new(N);
     let mut h: Vec<f64> = Vec::new();
     let try_num = 1000;
 
@@ -343,7 +337,7 @@ mod tests {
     // Generate 1024bits secret key
     let key = key::SecretKey::new();
 
-    let mut plan = mulfft::FFTPlan::new(1024);
+    let mut plan = FFTPlan::new(1024);
     let try_num = 100;
 
     for _i in 0..try_num {
@@ -383,7 +377,7 @@ mod tests {
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new_no_ksk();
 
-    let mut plan = mulfft::FFTPlan::new(N);
+    let mut plan = FFTPlan::new(N);
     let try_num = 100;
     for _i in 0..try_num {
       let mut plain_text_1: Vec<bool> = Vec::new();

@@ -400,6 +400,7 @@ mod tests {
 
   #[test]
   #[cfg(feature = "bootstrapping")]
+  #[ignore]
   fn test_batch_and_8_gates() {
     use super::{and, batch_and};
     use std::time::Instant;

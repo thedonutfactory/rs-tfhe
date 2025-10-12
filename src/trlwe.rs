@@ -1,6 +1,5 @@
-use crate::fft::FFTProcessor;
+use crate::fft::{FFTPlan, FFTProcessor};
 use crate::key;
-use crate::mulfft;
 use crate::params;
 use crate::tlwe;
 use crate::utils;
@@ -25,7 +24,7 @@ impl TRLWELv1 {
     p: &Vec<f64>,
     alpha: f64,
     key: &key::SecretKeyLv1,
-    plan: &mut mulfft::FFTPlan,
+    plan: &mut FFTPlan,
   ) -> TRLWELv1 {
     let mut rng = rand::thread_rng();
     let mut trlwe = TRLWELv1::new();
@@ -50,7 +49,7 @@ impl TRLWELv1 {
     p_bool: &Vec<bool>,
     alpha: f64,
     key: &key::SecretKeyLv1,
-    plan: &mut mulfft::FFTPlan,
+    plan: &mut FFTPlan,
   ) -> TRLWELv1 {
     let p_f64 = p_bool
       .iter()
@@ -60,7 +59,7 @@ impl TRLWELv1 {
   }
 
   #[allow(dead_code)]
-  pub fn decrypt_bool(&self, key: &key::SecretKeyLv1, plan: &mut mulfft::FFTPlan) -> Vec<bool> {
+  pub fn decrypt_bool(&self, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Vec<bool> {
     let poly_res = plan.processor.poly_mul_1024(&self.a, key);
     let mut res: Vec<bool> = Vec::new();
     for i in 0..self.a.len() {
@@ -82,7 +81,7 @@ pub struct TRLWELv1FFT {
 }
 
 impl TRLWELv1FFT {
-  pub fn new(trlwe: &TRLWELv1, plan: &mut mulfft::FFTPlan) -> TRLWELv1FFT {
+  pub fn new(trlwe: &TRLWELv1, plan: &mut FFTPlan) -> TRLWELv1FFT {
     TRLWELv1FFT {
       a: plan.processor.ifft_1024(&trlwe.a),
       b: plan.processor.ifft_1024(&trlwe.b),
@@ -131,8 +130,8 @@ pub fn sample_extract_index_2(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv0 {
 
 #[cfg(test)]
 mod tests {
+  use crate::fft::FFTPlan;
   use crate::key;
-  use crate::mulfft;
   use crate::params;
   use crate::trlwe;
   use rand::Rng;
@@ -146,7 +145,7 @@ mod tests {
     let key = key::SecretKey::new();
     let key_dirty = key::SecretKey::new();
 
-    let mut plan = mulfft::FFTPlan::new(N);
+    let mut plan = FFTPlan::new(N);
     let mut correct = 0;
     let try_num = 500;
 
@@ -189,7 +188,7 @@ mod tests {
     let key = key::SecretKey::new();
     let key_dirty = key::SecretKey::new();
 
-    let mut plan = mulfft::FFTPlan::new(N);
+    let mut plan = FFTPlan::new(N);
     let mut correct = 0;
     let try_num = 10;
 
