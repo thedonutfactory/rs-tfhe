@@ -164,7 +164,7 @@ pub fn mux_naive(
   tlwe_a: &Ciphertext,
   tlwe_b: &Ciphertext,
   tlwe_c: &Ciphertext,
-  cloud_key: &CloudKey
+  cloud_key: &CloudKey,
 ) -> Ciphertext {
   let a_and_b = and(tlwe_a, tlwe_b, &cloud_key);
   let nand_a_c = and(&not(tlwe_a), tlwe_c, &cloud_key); // and(&not(tlwe_a), tlwe_c, &cloud_key);
@@ -177,7 +177,7 @@ pub fn mux(
   tlwe_a: &Ciphertext,
   tlwe_b: &Ciphertext,
   tlwe_c: &Ciphertext,
-  cloud_key: &CloudKey
+  cloud_key: &CloudKey,
 ) -> Ciphertext {
   //let cloud_key_no_ksk = CloudKey::new_no_ksk();
 
@@ -186,7 +186,7 @@ pub fn mux(
   let nand_a_c = and(&not(tlwe_a), tlwe_c, &cloud_key_no_ksk);
   or(&a_and_b, &nand_a_c, &cloud_key_no_ksk)
   */
-  
+
   // and(a, b)
   let mut tlwe_and = tlwe_a + tlwe_b;
   *tlwe_and.b_mut() = tlwe_and.b().wrapping_add(utils::f64_to_torus(-0.125));
@@ -198,7 +198,7 @@ pub fn mux(
   *tlwe_nand.b_mut() = tlwe_nand.b().wrapping_add(utils::f64_to_torus(0.125));
   */
   // let mut tlwe_and_ny = &-(*tlwe_a) + tlwe_c;
-  
+
   let mut tlwe_and_ny = &(not(tlwe_a)) + tlwe_c;
   *tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-0.125));
   let u2: &Ciphertext = &bootstrap_without_key_switch(&tlwe_and_ny, &cloud_key);
@@ -208,7 +208,7 @@ pub fn mux(
   *tlwe_or.b_mut() = tlwe_or.b().wrapping_add(utils::f64_to_torus(0.125));
 
   return bootstrap(&tlwe_or, &cloud_key);
- 
+
   /*
   #[cfg(feature = "bootstrapping")]
   {
@@ -237,7 +237,6 @@ fn bootstrap(ctxt: &Ciphertext, cloud_key: &CloudKey) -> Ciphertext {
 
   identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
 }
-
 
 fn bootstrap_without_key_switch(ctxt: &Ciphertext, cloud_key: &CloudKey) -> Ciphertext {
   let trlwe = blind_rotate(ctxt, cloud_key);
