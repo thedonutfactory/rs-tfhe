@@ -550,7 +550,7 @@ mod tests {
     fn test_hom_nand_bench() {
         const N: usize = params::trgsw_lv1::N;
         let mut rng = rand::thread_rng();
-        let mut plan = mulfft::FFTPlan::new(N);
+        let mut plan = crate::fft::FFTPlan::new(N);
         let key = key::SecretKey::new();
         let cloud_key = key::CloudKey::new(&key, &mut plan);
 

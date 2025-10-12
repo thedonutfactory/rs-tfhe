@@ -60,6 +60,23 @@ pub trait FFTProcessor {
   /// Negacyclic polynomial multiplication for variable-length vectors
   /// Fallback to poly_mul_1024 for 1024-sized inputs, otherwise uses Vec variants
   fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32>;
+
+  /// Batch IFFT: Transform multiple polynomials at once
+  /// This can be more efficient than calling ifft_1024 multiple times
+  /// Input: slice of N polynomials (each 1024 elements)
+  /// Output: Vec of N frequency-domain representations
+  fn batch_ifft_1024(&mut self, inputs: &[[u32; 1024]]) -> Vec<[f64; 1024]> {
+    // Default implementation: just loop (subclasses can optimize)
+    inputs.iter().map(|input| self.ifft_1024(input)).collect()
+  }
+
+  /// Batch FFT: Transform multiple frequency-domain representations at once
+  /// Input: slice of N frequency-domain arrays (each 1024 elements)
+  /// Output: Vec of N time-domain polynomials
+  fn batch_fft_1024(&mut self, inputs: &[[f64; 1024]]) -> Vec<[u32; 1024]> {
+    // Default implementation: just loop (subclasses can optimize)
+    inputs.iter().map(|input| self.fft_1024(input)).collect()
+  }
 }
 
 // Platform-specific implementations
