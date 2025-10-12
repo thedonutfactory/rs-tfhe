@@ -94,8 +94,8 @@ fn bench_bootstrapping(c: &mut Criterion) {
 
 fn bench_fft_operations(c: &mut Criterion) {
   use rand::Rng;
+  use rs_tfhe::fft::FFTPlan;
   use rs_tfhe::fft::FFTProcessor;
-  use rs_tfhe::mulfft::FFTPlan;
   let mut plan = FFTPlan::new(1024);
   let mut rng = rand::thread_rng();
 

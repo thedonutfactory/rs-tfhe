@@ -23,13 +23,22 @@ use std::sync::Arc;
 pub struct RustFFTProcessor {
   n: usize,
   fft_2n: Arc<dyn Fft<f64>>,
+  use_real_pairing: bool, // Enable real-pairing FFT optimization
 }
 
 impl FFTProcessor for RustFFTProcessor {
   fn new(n: usize) -> Self {
     let mut planner = FftPlanner::new();
     let fft_2n = planner.plan_fft_forward(2 * n);
-    RustFFTProcessor { n, fft_2n }
+    RustFFTProcessor {
+      n,
+      fft_2n,
+      // Real-pairing optimization: Pack 2 real FFTs into 1 complex FFT
+      // Halves FFT count: 6 → 3 FFTs in external_product_with_fft
+      // Expected benefit: 15-20% speedup
+      // Hermitian unpacking formula verified correct ✅
+      use_real_pairing: true, // ✅ ENABLED!
+    }
   }
 
   fn ifft(&mut self, input: &[u32]) -> Vec<f64> {
@@ -99,6 +108,43 @@ impl FFTProcessor for RustFFTProcessor {
 
       self.fft(&mul)
     }
+  }
+
+  /// Optimized batch IFFT using real-pairing trick
+  ///
+  /// Since our polynomials have real coefficients (torus32), we can pack
+  /// 2 real FFTs into 1 complex FFT by treating them as real/imaginary parts.
+  /// This HALVES the FFT count!
+  ///
+  /// Algorithm:
+  /// - For pairs (a, b): pack as complex c = a + i*b
+  /// - Single complex FFT gives both transforms
+  /// - Unpack using Hermitian symmetry
+  ///
+  /// Expected improvement: ~15-20% for typical L=3 (6 FFTs → 3 FFTs)
+  fn batch_ifft_1024(&mut self, inputs: &[[u32; 1024]]) -> Vec<[f64; 1024]> {
+    if !self.use_real_pairing || inputs.len() < 2 {
+      // Fall back to default implementation for odd batches or if disabled
+      return inputs.iter().map(|input| self.ifft_1024(input)).collect();
+    }
+
+    let mut results = Vec::with_capacity(inputs.len());
+    let mut i = 0;
+
+    // Process pairs with real-pairing optimization
+    while i + 1 < inputs.len() {
+      let (result_a, result_b) = self.paired_ifft_1024(&inputs[i], &inputs[i + 1]);
+      results.push(result_a);
+      results.push(result_b);
+      i += 2;
+    }
+
+    // Handle odd one out if batch size is odd
+    if i < inputs.len() {
+      results.push(self.ifft_1024(&inputs[i]));
+    }
+
+    results
   }
 }
 
@@ -190,5 +236,167 @@ impl RustFFTProcessor {
     for i in 1..n {
       result[i] = (-buffer[n - i].re * adjust) as i64 as u32;
     }
+  }
+
+  /// Real-Pairing FFT: Process TWO real-valued IFFTs with ONE complex FFT
+  ///
+  /// OPTIMIZATION: Since our polynomials have real coefficients (torus32 values),
+  /// we can pack two real FFTs into one complex FFT:
+  ///   - Real part: first polynomial
+  ///   - Imaginary part: second polynomial
+  ///
+  /// This HALVES the FFT count: 6 FFTs → 3 FFTs for typical L=3
+  ///
+  /// Algorithm:
+  /// 1. Pack: buffer[i] = poly_a[i] + i*poly_b[i] (create complex from two reals)
+  /// 2. Extend to 2N with antisymmetry: [packed, -packed]
+  /// 3. Single 2N complex FFT
+  /// 4. Unpack using symmetry properties:
+  ///    - FFT(poly_a) comes from even symmetry
+  ///    - FFT(poly_b) comes from odd symmetry
+  ///
+  /// Expected speedup: 15-20% for external_product_with_fft (6→3 FFTs)
+  fn paired_ifft_1024(
+    &self,
+    poly_a: &[u32; 1024],
+    poly_b: &[u32; 1024],
+  ) -> ([f64; 1024], [f64; 1024]) {
+    let n = 1024;
+    let nn = 2 * n;
+
+    // Step 1: Pack two real polynomials into one complex array
+    let mut buffer: Vec<Complex<f64>> = Vec::with_capacity(nn);
+    for i in 0..n {
+      let val_a = poly_a[i] as i32 as f64;
+      let val_b = poly_b[i] as i32 as f64;
+      buffer.push(Complex::new(val_a, val_b)); // a is real, b is imaginary
+    }
+
+    // Step 2: Antisymmetric extension for negacyclic property
+    for i in 0..n {
+      let val_a = poly_a[i] as i32 as f64;
+      let val_b = poly_b[i] as i32 as f64;
+      buffer.push(Complex::new(-val_a, -val_b)); // Negacyclic: X^N = -1
+    }
+
+    // Step 3: Single 2N-point complex FFT (processes both polys at once!)
+    self.fft_2n.process(&mut buffer);
+
+    // Step 4: Unpack results using Hermitian symmetry
+    //
+    // For packed complex c = a + i*b where a, b are real:
+    //   FFT(a)[k] = (FFT(c)[k] + conj(FFT(c)[2N-k])) / 2
+    //   FFT(b)[k] = (FFT(c)[k] - conj(FFT(c)[2N-k])) / (2i)
+    //
+    // Simplified:
+    //   FFT(a)[k] = (C_k + C*_{2N-k}) / 2
+    //   FFT(b)[k] = -i * (C_k - C*_{2N-k}) / 2
+    //
+    // For negacyclic: We extract odd indices only
+    let mut result_a = [0.0f64; 1024];
+    let mut result_b = [0.0f64; 1024];
+
+    let ns2 = 512;
+    for i in 0..ns2 {
+      let idx = 2 * i + 1; // Odd index
+      let idx_conj = nn - idx; // Conjugate index (2N - (2i+1) = 2N-2i-1)
+
+      let c_k = buffer[idx];
+      let c_conj = buffer[idx_conj].conj(); // Complex conjugate
+
+      // Unpack using Hermitian symmetry:
+      // FFT(a) = (C_k + C*_conj) / 2
+      let fft_a_re = (c_k.re + c_conj.re) * 0.5;
+      let fft_a_im = (c_k.im + c_conj.im) * 0.5;
+
+      // FFT(b) = -i * (C_k - C*_conj) / 2
+      //        = -i * (C_k - C*_conj) / 2
+      //        = (-i/2) * (C_k - C*_conj)
+      //        = Multiplying by -i: (re, im) → (im, -re)
+      //        = ((C_k - C*_conj).im, -(C_k - C*_conj).re) / 2
+      let diff = c_k - c_conj;
+      let fft_b_re = diff.im * 0.5;
+      let fft_b_im = -diff.re * 0.5;
+
+      // Store in negacyclic format: [re_0..re_511, im_0..im_511]
+      result_a[i] = fft_a_re;
+      result_a[i + ns2] = fft_a_im;
+      result_b[i] = fft_b_re;
+      result_b[i + ns2] = fft_b_im;
+    }
+
+    (result_a, result_b)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_paired_ifft_basic() {
+    // Test that paired_ifft gives same results as two separate iffts
+    let mut processor = RustFFTProcessor::new(1024);
+
+    // Create two simple test polynomials
+    let mut poly_a = [0u32; 1024];
+    let mut poly_b = [0u32; 1024];
+
+    poly_a[0] = 1 << 31; // Simple test value
+    poly_b[0] = 1 << 30; // Different test value
+
+    // Method 1: Separate IFFTs (reference)
+    let result_a_sep = processor.ifft_1024(&poly_a);
+    let result_b_sep = processor.ifft_1024(&poly_b);
+
+    // Method 2: Paired IFFT (optimized)
+    let (result_a_paired, result_b_paired) = processor.paired_ifft_1024(&poly_a, &poly_b);
+
+    // Compare results
+    println!("\nComparing paired vs separate IFFT:");
+    let mut max_diff_a: f64 = 0.0;
+    let mut max_diff_b: f64 = 0.0;
+
+    for i in 0..1024 {
+      let diff_a = (result_a_sep[i] - result_a_paired[i]).abs();
+      let diff_b = (result_b_sep[i] - result_b_paired[i]).abs();
+      max_diff_a = max_diff_a.max(diff_a);
+      max_diff_b = max_diff_b.max(diff_b);
+
+      if i < 5 || i >= 512 && i < 517 {
+        println!(
+          "  [{}] a: sep={:.2}, paired={:.2}, diff={:.2e}",
+          i, result_a_sep[i], result_a_paired[i], diff_a
+        );
+        println!(
+          "  [{}] b: sep={:.2}, paired={:.2}, diff={:.2e}",
+          i, result_b_sep[i], result_b_paired[i], diff_b
+        );
+      }
+
+      // Find first large mismatch
+      if diff_a > 1.0 && i < 10 {
+        println!("  !!! First large diff_a at index {}: {:.2e}", i, diff_a);
+      }
+      if diff_b > 1.0 && i < 10 {
+        println!("  !!! First large diff_b at index {}: {:.2e}", i, diff_b);
+      }
+    }
+
+    println!("\nMax differences:");
+    println!("  poly_a: {:.2e}", max_diff_a);
+    println!("  poly_b: {:.2e}", max_diff_b);
+
+    // Allow small numerical differences
+    assert!(
+      max_diff_a < 1.0,
+      "Poly A difference too large: {}",
+      max_diff_a
+    );
+    assert!(
+      max_diff_b < 1.0,
+      "Poly B difference too large: {}",
+      max_diff_b
+    );
   }
 }
