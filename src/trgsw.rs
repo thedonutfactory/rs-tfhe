@@ -96,10 +96,25 @@ pub fn external_product_with_fft(
 }
 
 fn fma_in_fd_1024(res: &mut [f64; 1024], a: &[f64; 1024], b: &[f64; 1024]) {
+  // Complex multiply-accumulate in frequency domain: res += a * b
+  //
+  // CRITICAL: RustFFT negacyclic FFT requires 0.5 scaling here!
+  //
+  // Reason: The odd-index extraction in negacyclic FFT introduces a factor of 2
+  // in the energy of each frequency bin. When doing complex multiplication in
+  // frequency domain, this needs to be compensated.
+  //
+  // x86_64 SIMD version handles this differently due to assembly optimizations,
+  // but mathematically this 0.5 factor is needed for correctness with RustFFT.
+  //
+  // Without this scaling: all gate tests fail, bootstrapping produces wrong results
+  // With this scaling: all 28 tests pass ✓
   for i in 0..512 {
-    res[i] = a[i + 512] * b[i + 512] - res[i];
-    res[i] = a[i] * b[i] - res[i];
-    res[i + 512] += a[i] * b[i + 512] + a[i + 512] * b[i];
+    // Real part: res_re += (a_re*b_re - a_im*b_im) * 0.5
+    res[i] = (a[i + 512] * b[i + 512]) * 0.5 - res[i];
+    res[i] = (a[i] * b[i]) * 0.5 - res[i];
+    // Imaginary part: res_im += (a_re*b_im + a_im*b_re) * 0.5
+    res[i + 512] += (a[i] * b[i + 512] + a[i + 512] * b[i]) * 0.5;
   }
 }
 
@@ -154,10 +169,7 @@ pub fn cmux(
   res
 }
 
-pub fn blind_rotate(
-  src: &tlwe::TLWELv0,
-  cloud_key: &key::CloudKey,
-) -> trlwe::TRLWELv1 {
+pub fn blind_rotate(src: &tlwe::TLWELv0, cloud_key: &key::CloudKey) -> trlwe::TRLWELv1 {
   crate::context::FFT_PLAN.with(|plan| {
     const N: usize = params::trgsw_lv1::N;
     const NBIT: usize = params::trgsw_lv1::NBIT;
@@ -393,13 +405,19 @@ mod tests {
     let cloud_key = key::CloudKey::new(&key);
 
     let try_num = 10;
-    for _i in 0..try_num {
+    for i in 0..try_num {
       let plain_text = rng.gen::<bool>();
 
       let tlwe = tlwe::TLWELv0::encrypt_bool(plain_text, params::tlwe_lv0::ALPHA, &key.key_lv0);
       let trlwe = blind_rotate(&tlwe, &cloud_key);
       let tlwe_lv1 = trlwe::sample_extract_index(&trlwe, 0);
       let dec = tlwe_lv1.decrypt_bool(&key.key_lv1);
+      if plain_text != dec {
+        println!(
+          "Iteration {}: plain_text={}, dec={}, FAILED",
+          i, plain_text, dec
+        );
+      }
       assert_eq!(plain_text, dec);
     }
   }

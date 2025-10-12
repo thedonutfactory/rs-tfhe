@@ -9,6 +9,8 @@ edition = "2021"
 [dependencies]
 rand = "0.7.3"
 rand_distr = "0.3.0"
+rustfft = "6.1.0"
+realfft = "3.3.0"
 
 [build-dependencies]
 cc = "1.0.65"
