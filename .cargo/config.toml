@@ -1,0 +1,21 @@
+# Cargo configuration for optimized builds
+#
+# This configuration enables SIMD instructions on the target CPU:
+# - ARM64 (Apple Silicon): NEON instructions (~5% performance boost)
+# - x86_64: SSE/AVX (but we use hand-optimized assembly instead)
+#
+# Performance impact on ARM64:
+# - Without native: ~110ms per gate
+# - With native:    ~105ms per gate
+# - Improvement:    ~5%
+
+[build]
+# Enable native CPU features (NEON on ARM64, AVX on x86_64)
+rustflags = ["-C", "target-cpu=native"]
+
+[profile.release]
+# Aggressive optimizations for cryptographic performance
+lto = "fat"              # Link-time optimization (enables cross-crate optimizations)
+codegen-units = 1        # Single codegen unit (better optimization, slower compile)
+opt-level = 3            # Maximum optimization level
+

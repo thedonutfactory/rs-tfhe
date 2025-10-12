@@ -1,9 +1,18 @@
-/// SIMD-optimized FFT processor using SPQLIOS C++ library
+/// x86_64 SIMD-optimized FFT processor using SPQLIOS C++ library
+/// 
+/// This implementation uses hand-written AVX/FMA assembly code
+/// for maximum performance on Intel/AMD processors.
 ///
-/// This implementation uses hand-optimized AVX/FMA assembly code
-/// for maximum performance on x86_64 processors.
+/// **Optimizations:**
+/// - Hand-coded AVX2 assembly for FFT operations
+/// - FMA (Fused Multiply-Add) instructions
+/// - Specialized register allocation
+/// - Cache-optimized butterfly operations
+/// 
+/// **Performance:** ~30ms per gate (3.5x faster than ARM64 NEON)
 ///
-/// Performance: ~30ms per gate
+/// Only available on x86_64 architecture. Other platforms automatically
+/// use the portable RustFFTProcessor instead.
 use super::FFTProcessor;
 use std::os::raw::c_double;
 use std::os::raw::c_int;
