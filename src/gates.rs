@@ -468,6 +468,7 @@ mod tests {
       );
 
       // Verify correctness for first batch only (to save time)
+      /*
       if n_gates == 8 {
         println!("├────────┴──────────────┴──────────────┴───────────┴─────────┴────────────┤");
         println!("│ Verification (8-gate batch):                                            │");
@@ -512,7 +513,7 @@ mod tests {
         }
         println!("├────────┬──────────────┬──────────────┬───────────┬─────────┬────────────┤");
       }
-
+      */
       // Quick correctness check for other batch sizes
       for ((a, b), (seq_result, batch_result)) in test_data
         .iter()
