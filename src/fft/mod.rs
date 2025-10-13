@@ -86,12 +86,15 @@ pub mod spqlios_fft;
 #[cfg(not(target_arch = "x86_64"))]
 pub mod rustfft_processor;
 
+#[cfg(not(target_arch = "x86_64"))]
+pub mod realfft_processor; // RealFFT-based processor for real-valued signals
+
 // Re-export the appropriate implementation based on architecture
 #[cfg(target_arch = "x86_64")]
 pub type DefaultFFTProcessor = spqlios_fft::SpqliosFFT;
 
 #[cfg(not(target_arch = "x86_64"))]
-pub type DefaultFFTProcessor = rustfft_processor::RustFFTProcessor;
+pub type DefaultFFTProcessor = realfft_processor::RealFFTProcessor;
 
 pub struct FFTPlan {
   pub processor: DefaultFFTProcessor,
