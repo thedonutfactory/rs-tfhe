@@ -290,6 +290,8 @@ mod tests {
     use crate::fft::realfft_processor::RealFFTProcessor;
     #[cfg(not(target_arch = "x86_64"))]
     use crate::fft::rustfft_processor::RustFFTProcessor;
+    #[cfg(not(target_arch = "x86_64"))]
+    use crate::fft::tfhe_fft_processor::TfheFftProcessor;
 
     let test_poly = [1u32 << 30; 1024];
     let test_freq = [1.0f64; 1024];
@@ -304,12 +306,14 @@ mod tests {
       let mut fastfft = FastFftProcessor::new(1024);
       let mut rustfft = RustFFTProcessor::new(1024);
       let mut realfft = RealFFTProcessor::new(1024);
+      let mut tffhefft = TfheFftProcessor::new(1024);
 
       // Warmup
       for _ in 0..100 {
         let _ = fastfft.ifft_1024(&test_poly);
         let _ = rustfft.ifft_1024(&test_poly);
         let _ = realfft.ifft_1024(&test_poly);
+        let _ = tffhefft.ifft_1024(&test_poly);
       }
 
       // Benchmark FastFFT IFFT
@@ -333,6 +337,13 @@ mod tests {
       }
       let realfft_ifft_time = start.elapsed();
 
+      // Benchmark TfheFft IFFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = tffhefft.ifft_1024(&test_poly);
+      }
+      let tfhefft_ifft_time = start.elapsed();
+
       // Benchmark FastFFT FFT
       let start = Instant::now();
       for _ in 0..iterations {
@@ -354,6 +365,13 @@ mod tests {
       }
       let realfft_fft_time = start.elapsed();
 
+      // Benchmark TfheFft FFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = tffhefft.fft_1024(&test_freq);
+      }
+      let tfhefft_fft_time = start.elapsed();
+
       println!("║  Forward Transform (time → frequency, IFFT):            ║");
       println!("║                                                          ║");
       println!(
@@ -365,18 +383,33 @@ mod tests {
         rustfft_ifft_time.as_micros() as f64 / iterations as f64
       );
       println!(
-        "║    RealFFT:               {:>7.2}µs  ⭐ FASTEST           ║",
+        "║    RealFFT:               {:>7.2}µs                       ║",
         realfft_ifft_time.as_micros() as f64 / iterations as f64
       );
+      println!(
+        "║    TfheFft (Extended FT): {:>7.2}µs                       ║",
+        tfhefft_ifft_time.as_micros() as f64 / iterations as f64
+      );
       println!("║                                                          ║");
-      println!(
-        "║    RealFFT speedup:       {:.2}x vs RustFFT                ║",
-        rustfft_ifft_time.as_secs_f64() / realfft_ifft_time.as_secs_f64()
-      );
-      println!(
-        "║                           {:.2}x vs FastFFT                ║",
-        fastfft_ifft_time.as_secs_f64() / realfft_ifft_time.as_secs_f64()
-      );
+
+      let ifft_times = [
+        fastfft_ifft_time,
+        rustfft_ifft_time,
+        realfft_ifft_time,
+        tfhefft_ifft_time,
+      ];
+      let fastest_ifft = ifft_times.iter().min().unwrap();
+      print!("║    IFFT Winner: ");
+      if fastest_ifft == &realfft_ifft_time {
+        println!("RealFFT ⭐                              ║");
+      } else if fastest_ifft == &tfhefft_ifft_time {
+        println!("TfheFft ⭐                              ║");
+      } else if fastest_ifft == &rustfft_ifft_time {
+        println!("RustFFT ⭐                              ║");
+      } else {
+        println!("FastFFT ⭐                              ║");
+      }
+
       println!("║                                                          ║");
       println!("║  Inverse Transform (frequency → time, FFT):              ║");
       println!("║                                                          ║");
@@ -392,17 +425,29 @@ mod tests {
         "║    RealFFT:               {:>7.2}µs                       ║",
         realfft_fft_time.as_micros() as f64 / iterations as f64
       );
+      println!(
+        "║    TfheFft (Extended FT): {:>7.2}µs                       ║",
+        tfhefft_fft_time.as_micros() as f64 / iterations as f64
+      );
       println!("║                                                          ║");
 
-      let fft_times = [fastfft_fft_time, rustfft_fft_time, realfft_fft_time];
+      let fft_times = [
+        fastfft_fft_time,
+        rustfft_fft_time,
+        realfft_fft_time,
+        tfhefft_fft_time,
+      ];
       let fastest_fft_time = fft_times.iter().min().unwrap();
 
+      print!("║    FFT Winner: ");
       if fastest_fft_time == &realfft_fft_time {
-        println!("║    Winner: RealFFT ⭐                                    ║");
+        println!("RealFFT ⭐                                ║");
+      } else if fastest_fft_time == &tfhefft_fft_time {
+        println!("TfheFft ⭐                                ║");
       } else if fastest_fft_time == &rustfft_fft_time {
-        println!("║    Winner: RustFFT (Planner) ⭐                          ║");
+        println!("RustFFT (Planner) ⭐                          ║");
       } else {
-        println!("║    Winner: FastFFT (Radix-4) ⭐                          ║");
+        println!("FastFFT (Radix-4) ⭐                          ║");
       }
     }
 
