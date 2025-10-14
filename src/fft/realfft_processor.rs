@@ -8,6 +8,7 @@
 //! - N real inputs → N/2+1 complex outputs (right-sized)
 //! - Optimized for real signals
 //! - Plan reuse for repeated transforms
+//! - Proper scratch buffer usage via `process_with_scratch()` for zero-allocation hot path
 
 use super::FFTProcessor;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
@@ -25,6 +26,8 @@ pub struct RealFFTProcessor {
   fft_2n: Arc<dyn Fft<f64>>,
   // Pre-allocated buffer for inverse transform
   inverse_buffer: RefCell<Vec<Complex<f64>>>,
+  // Scratch buffer for process_with_scratch (avoids per-call allocation)
+  scratch: RefCell<Vec<Complex<f64>>>,
 }
 
 impl RealFFTProcessor {
@@ -36,7 +39,12 @@ impl RealFFTProcessor {
 
     // Also cache complex FFT plan for inverse transform
     let mut complex_planner = rustfft::FftPlanner::new();
+    complex_planner.plan_fft_forward(fft_size);
     let fft_2n = complex_planner.plan_fft_forward(fft_size);
+
+    // Pre-allocate scratch buffer with optimal size
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.get_inplace_scratch_len
+    let scratch_len = fft_2n.get_inplace_scratch_len();
 
     RealFFTProcessor {
       n,
@@ -44,6 +52,7 @@ impl RealFFTProcessor {
       complex_to_real: real_planner.plan_fft_inverse(fft_size),
       fft_2n,
       inverse_buffer: RefCell::new(Vec::new()),
+      scratch: RefCell::new(vec![Complex::new(0.0, 0.0); scratch_len]),
     }
   }
 }
@@ -131,8 +140,11 @@ impl FFTProcessor for RealFFTProcessor {
       buffer[idx] = Complex::new(input[i] * scale, -input[i + ns2] * scale);
     }
 
-    // 2N-point FFT using cached plan
-    self.fft_2n.process(&mut buffer);
+    // 2N-point FFT using cached plan with scratch buffer
+    // Using process_with_scratch avoids per-call allocation
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.process_with_scratch
+    let mut scratch = self.scratch.borrow_mut();
+    self.fft_2n.process_with_scratch(&mut buffer, &mut scratch);
 
     // Extract pattern with proper rounding
     let adjust = 0.25;

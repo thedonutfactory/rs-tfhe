@@ -13,7 +13,7 @@
 ///
 /// Only available on x86_64 architecture. Other platforms automatically
 /// use the portable RustFFTProcessor instead.
-use super::FFTProcessor;
+use super::{FFTMode, FFTProcessor};
 use std::os::raw::c_double;
 use std::os::raw::c_int;
 use std::os::raw::c_uint;
@@ -46,6 +46,10 @@ impl FFTProcessor for SpqliosFFT {
         n,
       }
     }
+  }
+
+  fn fft_mode(&self) -> FFTMode {
+    FFTMode::Negacyclic
   }
 
   fn ifft(&mut self, input: &[u32]) -> Vec<f64> {

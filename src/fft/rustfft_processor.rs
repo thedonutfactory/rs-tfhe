@@ -11,6 +11,11 @@
 /// Algorithm ported from the original TFHE library and Go implementation.
 /// All operations are mathematically equivalent to the x86_64 SIMD version.
 ///
+/// **Optimizations Applied:**
+/// - Proper scratch buffer usage via `process_with_scratch()` (zero-allocation hot path)
+/// - Real-pairing optimization (packs 2 real FFTs into 1 complex FFT)
+/// - Pre-allocated working buffers
+///
 /// **Performance on ARM64 (with NEON):**
 /// - ~105ms per gate with target-cpu=native
 /// - ~110ms per gate with generic ARM64
@@ -29,12 +34,19 @@ pub struct RustFFTProcessor {
   // Reduces allocations in hot path by reusing the same buffer
   // RefCell allows interior mutability even with &self methods
   buffer_2n: RefCell<Vec<Complex<f64>>>, // 2N complex buffer for FFT operations
+  // Scratch buffer for process_with_scratch (avoids per-call allocation)
+  scratch: RefCell<Vec<Complex<f64>>>,
 }
 
 impl FFTProcessor for RustFFTProcessor {
   fn new(n: usize) -> Self {
     let mut planner = FftPlanner::new();
     let fft_2n = planner.plan_fft_forward(2 * n);
+
+    // Pre-allocate scratch buffer with optimal size
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.get_inplace_scratch_len
+    let scratch_len = fft_2n.get_inplace_scratch_len();
+
     RustFFTProcessor {
       n,
       fft_2n,
@@ -45,6 +57,7 @@ impl FFTProcessor for RustFFTProcessor {
       use_real_pairing: true, // ✅ ENABLED!
       // In-place FFT: Pre-allocate working buffer (5-10% gain from reduced allocations)
       buffer_2n: RefCell::new(vec![Complex::new(0.0, 0.0); 2 * n]),
+      scratch: RefCell::new(vec![Complex::new(0.0, 0.0); scratch_len]),
     }
   }
 
@@ -192,8 +205,11 @@ impl RustFFTProcessor {
       buffer.push(Complex::new(-val, 0.0));
     }
 
-    // Step 2: Standard 2N-point FFT (using cached plan)
-    self.fft_2n.process(&mut buffer);
+    // Step 2: Standard 2N-point FFT with scratch buffer
+    // Using process_with_scratch avoids per-call allocation
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.process_with_scratch
+    let mut scratch = self.scratch.borrow_mut();
+    self.fft_2n.process_with_scratch(&mut buffer, &mut scratch);
 
     // Step 3: Extract odd indices (bins 1, 3, 5, ..., 1023)
     // These correspond to primitive 2N-th roots: ω, ω³, ω⁵, ...
@@ -236,8 +252,11 @@ impl RustFFTProcessor {
       buffer[idx] = Complex::new(input[i] * scale, -input[i + ns2] * scale);
     }
 
-    // 2N-point FFT (using cached plan)
-    self.fft_2n.process(&mut buffer);
+    // 2N-point FFT with scratch buffer
+    // Using process_with_scratch avoids per-call allocation
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.process_with_scratch
+    let mut scratch = self.scratch.borrow_mut();
+    self.fft_2n.process_with_scratch(&mut buffer, &mut scratch);
 
     // Extract with pattern: res[0] = z[0]/4, res[i] = -z[N-i]/4
     // The 0.25 factor accounts for the double-FFT structure
@@ -292,8 +311,11 @@ impl RustFFTProcessor {
       buffer.push(Complex::new(-val_a, -val_b)); // Negacyclic: X^N = -1
     }
 
-    // Step 3: Single 2N-point complex FFT (processes both polys at once!)
-    self.fft_2n.process(&mut buffer);
+    // Step 3: Single 2N-point complex FFT with scratch buffer
+    // Using process_with_scratch avoids per-call allocation
+    // See: https://docs.rs/rustfft/latest/rustfft/trait.Fft.html#tymethod.process_with_scratch
+    let mut scratch = self.scratch.borrow_mut();
+    self.fft_2n.process_with_scratch(&mut buffer, &mut scratch);
 
     // Step 4: Unpack results using Hermitian symmetry
     //

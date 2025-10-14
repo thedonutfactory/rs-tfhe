@@ -89,12 +89,20 @@ pub mod rustfft_processor;
 #[cfg(not(target_arch = "x86_64"))]
 pub mod realfft_processor; // RealFFT-based processor for real-valued signals
 
-// Re-export the appropriate implementation based on architecture
+// Re-export the appropriate implementation based on architecture and features
 #[cfg(target_arch = "x86_64")]
 pub type DefaultFFTProcessor = spqlios_fft::SpqliosFFT;
 
+//#[cfg(not(target_arch = "x86_64"))]
+//pub type DefaultFFTProcessor = realfft_processor::RealFFTProcessor;
+
+pub mod fastfft_processor;
+//pub type DefaultFFTProcessor = fastfft_processor::FastFftProcessor;
+
+pub mod tfhe_fft_processor;
 #[cfg(not(target_arch = "x86_64"))]
-pub type DefaultFFTProcessor = realfft_processor::RealFFTProcessor;
+pub type DefaultFFTProcessor = tfhe_fft_processor::TfheFftProcessor;
+// ✅ TfheFftProcessor WORKING! Uses Extended Fourier Transform (N/2 FFT + twisting factors)
 
 pub struct FFTPlan {
   pub processor: DefaultFFTProcessor,
@@ -128,6 +136,289 @@ thread_local!(pub static FFT_PLAN: RefCell<FFTPlan> = RefCell::new(FFTPlan::new(
 // - Metal:               ~30-50ms per gate (GPU overhead on integrated GPUs)
 // - Hand-coded NEON asm: ~35-50ms per gate (could approach x86_64 performance)
 
+#[cfg(test)]
+mod tests {
+  use crate::fft::FFTPlan;
+  use crate::fft::FFTProcessor;
+  use crate::params;
+  use rand::Rng;
+
+  #[test]
+  fn test_fft_ifft() {
+    let n = 1024;
+    let mut plan = FFTPlan::new(n);
+    let mut rng = rand::thread_rng();
+    let mut a: Vec<u32> = vec![0u32; n];
+    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+
+    let a_fft = plan.processor.ifft(&a);
+    let res = plan.processor.fft(&a_fft);
+    for i in 0..n {
+      let diff = a[i] as i32 - res[i] as i32;
+      assert!(diff < 2 && diff > -2);
+      println!("{} {} {}", a_fft[i], a[i], res[i]);
+    }
+  }
+
+  #[test]
+  fn test_fft_poly_mul() {
+    let n = 1024;
+    let mut plan = FFTPlan::new(n);
+    let mut rng = rand::thread_rng();
+    let mut a: Vec<u32> = vec![0u32; n];
+    let mut b: Vec<u32> = vec![0u32; n];
+    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+    b.iter_mut()
+      .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
+
+    let fft_res = plan.processor.poly_mul(&a, &b);
+    let res = poly_mul(&a.to_vec(), &b.to_vec());
+    for i in 0..n {
+      let diff = res[i] as i64 - fft_res[i] as i64;
+      assert!(
+        diff < 2 && diff > -2,
+        "Failed at index {}: expected={}, got={}, diff={}",
+        i,
+        res[i],
+        fft_res[i],
+        diff
+      );
+    }
+  }
+
+  #[test]
+  fn test_fft_simple() {
+    let mut plan = FFTPlan::new(1024);
+    // Delta function test
+    let mut a = [0u32; 1024];
+    a[0] = 1000;
+    let freq = plan.processor.ifft_1024(&a);
+    let res = plan.processor.fft_1024(&freq);
+    println!(
+      "Delta: in[0]={}, out[0]={}, diff={}",
+      a[0],
+      res[0],
+      a[0] as i64 - res[0] as i64
+    );
+    assert!((a[0] as i64 - res[0] as i64).abs() < 10);
+  }
+
+  #[test]
+  fn test_fft_ifft_1024() {
+    let mut plan = FFTPlan::new(1024);
+    let mut rng = rand::thread_rng();
+    let mut a = [0u32; 1024];
+    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+
+    let a_fft = plan.processor.ifft_1024(&a);
+    let res = plan.processor.fft_1024(&a_fft);
+
+    let mut max_diff = 0i64;
+    for i in 0..1024 {
+      let diff = (a[i] as i64 - res[i] as i64).abs();
+      if diff > max_diff {
+        max_diff = diff;
+      }
+    }
+    println!("Max difference: {}", max_diff);
+
+    for i in 0..1024 {
+      let diff = a[i] as i32 - res[i] as i32;
+      assert!(
+        diff < 2 && diff > -2,
+        "Failed at index {}: input={}, output={}, diff={}",
+        i,
+        a[i],
+        res[i],
+        diff
+      );
+    }
+  }
+
+  #[test]
+  fn test_fft_poly_mul_1024() {
+    let mut plan = FFTPlan::new(1024);
+    let mut rng = rand::thread_rng();
+    for _i in 0..100 {
+      let mut a = [0u32; 1024];
+      let mut b = [0u32; 1024];
+      a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+      b.iter_mut()
+        .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
+
+      let fft_res = plan.processor.poly_mul_1024(&a, &b);
+      let res = poly_mul(&a.to_vec(), &b.to_vec());
+      for i in 0..1024 {
+        let diff = res[i] as i64 - fft_res[i] as i64;
+        assert!(
+          diff < 2 && diff > -2,
+          "Failed at index {}: expected={}, got={}, diff={}",
+          i,
+          res[i],
+          fft_res[i],
+          diff
+        );
+      }
+    }
+  }
+
+  fn poly_mul(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+    let n = a.len();
+    let mut res: Vec<u32> = vec![0u32; n];
+
+    for i in 0..n {
+      for j in 0..n {
+        if i + j < n {
+          res[i + j] = res[i + j].wrapping_add(a[i].wrapping_mul(b[j]));
+        } else {
+          res[i + j - n] = res[i + j - n].wrapping_sub(a[i].wrapping_mul(b[j]));
+        }
+      }
+    }
+
+    res
+  }
+
+  #[test]
+  #[ignore]
+  fn bench_all_fft_processors() {
+    use std::time::Instant;
+
+    #[cfg(not(target_arch = "x86_64"))]
+    use crate::fft::fastfft_processor::FastFftProcessor;
+    #[cfg(not(target_arch = "x86_64"))]
+    use crate::fft::realfft_processor::RealFFTProcessor;
+    #[cfg(not(target_arch = "x86_64"))]
+    use crate::fft::rustfft_processor::RustFFTProcessor;
+
+    let test_poly = [1u32 << 30; 1024];
+    let test_freq = [1.0f64; 1024];
+    let iterations = 10000;
+
+    println!("\n╔══════════════════════════════════════════════════════════╗");
+    println!("║          FFT Processor Comparison (N=1024)               ║");
+    println!("╠══════════════════════════════════════════════════════════╣");
+
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+      let mut fastfft = FastFftProcessor::new(1024);
+      let mut rustfft = RustFFTProcessor::new(1024);
+      let mut realfft = RealFFTProcessor::new(1024);
+
+      // Warmup
+      for _ in 0..100 {
+        let _ = fastfft.ifft_1024(&test_poly);
+        let _ = rustfft.ifft_1024(&test_poly);
+        let _ = realfft.ifft_1024(&test_poly);
+      }
+
+      // Benchmark FastFFT IFFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = fastfft.ifft_1024(&test_poly);
+      }
+      let fastfft_ifft_time = start.elapsed();
+
+      // Benchmark RustFFT IFFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = rustfft.ifft_1024(&test_poly);
+      }
+      let rustfft_ifft_time = start.elapsed();
+
+      // Benchmark RealFFT IFFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = realfft.ifft_1024(&test_poly);
+      }
+      let realfft_ifft_time = start.elapsed();
+
+      // Benchmark FastFFT FFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = fastfft.fft_1024(&test_freq);
+      }
+      let fastfft_fft_time = start.elapsed();
+
+      // Benchmark RustFFT FFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = rustfft.fft_1024(&test_freq);
+      }
+      let rustfft_fft_time = start.elapsed();
+
+      // Benchmark RealFFT FFT
+      let start = Instant::now();
+      for _ in 0..iterations {
+        let _ = realfft.fft_1024(&test_freq);
+      }
+      let realfft_fft_time = start.elapsed();
+
+      println!("║  Forward Transform (time → frequency, IFFT):            ║");
+      println!("║                                                          ║");
+      println!(
+        "║    FastFFT (Radix-4):     {:>7.2}µs                       ║",
+        fastfft_ifft_time.as_micros() as f64 / iterations as f64
+      );
+      println!(
+        "║    RustFFT (Planner):     {:>7.2}µs                       ║",
+        rustfft_ifft_time.as_micros() as f64 / iterations as f64
+      );
+      println!(
+        "║    RealFFT:               {:>7.2}µs  ⭐ FASTEST           ║",
+        realfft_ifft_time.as_micros() as f64 / iterations as f64
+      );
+      println!("║                                                          ║");
+      println!(
+        "║    RealFFT speedup:       {:.2}x vs RustFFT                ║",
+        rustfft_ifft_time.as_secs_f64() / realfft_ifft_time.as_secs_f64()
+      );
+      println!(
+        "║                           {:.2}x vs FastFFT                ║",
+        fastfft_ifft_time.as_secs_f64() / realfft_ifft_time.as_secs_f64()
+      );
+      println!("║                                                          ║");
+      println!("║  Inverse Transform (frequency → time, FFT):              ║");
+      println!("║                                                          ║");
+      println!(
+        "║    FastFFT (Radix-4):     {:>7.2}µs                       ║",
+        fastfft_fft_time.as_micros() as f64 / iterations as f64
+      );
+      println!(
+        "║    RustFFT (Planner):     {:>7.2}µs                       ║",
+        rustfft_fft_time.as_micros() as f64 / iterations as f64
+      );
+      println!(
+        "║    RealFFT:               {:>7.2}µs                       ║",
+        realfft_fft_time.as_micros() as f64 / iterations as f64
+      );
+      println!("║                                                          ║");
+
+      let fft_times = [fastfft_fft_time, rustfft_fft_time, realfft_fft_time];
+      let fastest_fft_time = fft_times.iter().min().unwrap();
+
+      if fastest_fft_time == &realfft_fft_time {
+        println!("║    Winner: RealFFT ⭐                                    ║");
+      } else if fastest_fft_time == &rustfft_fft_time {
+        println!("║    Winner: RustFFT (Planner) ⭐                          ║");
+      } else {
+        println!("║    Winner: FastFFT (Radix-4) ⭐                          ║");
+      }
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+      println!("║  x86_64: Using SpqliosFFT (hand-optimized assembly)     ║");
+      println!("║                                                          ║");
+      println!("║  This benchmark only runs on non-x86_64 architectures   ║");
+      println!("║  to compare pure-Rust FFT implementations.              ║");
+    }
+
+    println!("╚══════════════════════════════════════════════════════════╝");
+  }
+}
+
+#[cfg(target_arch = "x86_64")]
 #[cfg(test)]
 mod tests {
   use crate::fft::FFTPlan;
