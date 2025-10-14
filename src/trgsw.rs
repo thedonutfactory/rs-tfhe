@@ -443,7 +443,6 @@ mod tests {
 
   #[test]
   fn test_blind_rotate() {
-    const N: usize = params::trgsw_lv1::N;
     let mut rng = rand::thread_rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
@@ -468,7 +467,6 @@ mod tests {
 
   #[test]
   fn test_identity_key_switching() {
-    const N: usize = params::trgsw_lv1::N;
     let mut rng = rand::thread_rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);

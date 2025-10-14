@@ -27,7 +27,6 @@ use tfhe_fft::c64;
 use tfhe_fft::unordered::Plan;
 
 pub struct TfheFftProcessor {
-  n: usize,
   plan: Plan,            // N/2 plan (not 2N!)
   twisties_re: Vec<f64>, // Real part of 2N-th roots of unity
   twisties_im: Vec<f64>, // Imaginary part of 2N-th roots of unity
@@ -64,7 +63,6 @@ impl TfheFftProcessor {
     }
 
     TfheFftProcessor {
-      n,
       plan,
       twisties_re,
       twisties_im,

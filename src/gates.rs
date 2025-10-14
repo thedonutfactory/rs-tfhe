@@ -1,7 +1,6 @@
 use crate::key::CloudKey;
 use crate::params;
 use crate::tlwe::{AddMul, SubMul};
-use crate::trgsw;
 use crate::trgsw::{batch_blind_rotate, blind_rotate, identity_key_switching};
 use crate::trlwe::{sample_extract_index, sample_extract_index_2};
 use crate::utils;
@@ -349,7 +348,6 @@ mod tests {
     expect: E,
     actual: C,
   ) {
-    const N: usize = params::trgsw_lv1::N;
     let mut rng = rand::thread_rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);

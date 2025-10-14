@@ -11,7 +11,7 @@
 //! - Proper scratch buffer usage via `process_with_scratch()` for zero-allocation hot path
 
 use super::FFTProcessor;
-use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
+use realfft::{RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::Fft;
 use std::cell::RefCell;
@@ -21,7 +21,6 @@ use std::sync::Arc;
 pub struct RealFFTProcessor {
   n: usize,
   real_to_complex: Arc<dyn RealToComplex<f64>>,
-  complex_to_real: Arc<dyn ComplexToReal<f64>>,
   // Cached complex FFT for inverse transform
   fft_2n: Arc<dyn Fft<f64>>,
   // Pre-allocated buffer for inverse transform
@@ -49,7 +48,6 @@ impl RealFFTProcessor {
     RealFFTProcessor {
       n,
       real_to_complex: real_planner.plan_fft_forward(fft_size),
-      complex_to_real: real_planner.plan_fft_inverse(fft_size),
       fft_2n,
       inverse_buffer: RefCell::new(Vec::new()),
       scratch: RefCell::new(vec![Complex::new(0.0, 0.0); scratch_len]),
