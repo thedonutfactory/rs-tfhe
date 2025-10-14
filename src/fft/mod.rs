@@ -81,33 +81,15 @@ pub trait FFTProcessor {
 
 // Platform-specific implementations
 #[cfg(target_arch = "x86_64")]
-pub mod spqlios_fft;
-
-#[cfg(not(target_arch = "x86_64"))]
-pub mod rustfft_processor;
-
-#[cfg(not(target_arch = "x86_64"))]
-pub mod realfft_processor; // RealFFT-based processor for real-valued signals
+mod spqlios;
 
 // Re-export the appropriate implementation based on architecture and features
 #[cfg(target_arch = "x86_64")]
-pub type DefaultFFTProcessor = spqlios_fft::SpqliosFFT;
-
-//#[cfg(not(target_arch = "x86_64"))]
-//pub type DefaultFFTProcessor = realfft_processor::RealFFTProcessor;
-
-pub mod fastfft_processor;
-//pub type DefaultFFTProcessor = fastfft_processor::FastFftProcessor;
-
-pub mod tfhe_fft_processor;
-//#[cfg(not(target_arch = "x86_64"))]
-//pub type DefaultFFTProcessor = tfhe_fft_processor::TfheFftProcessor;
-// ✅ TfheFftProcessor: 1.80µs (original baseline)
+pub type DefaultFFTProcessor = spqlios::SpqliosFFT;
 
 pub mod extended_fft_processor;
 #[cfg(not(target_arch = "x86_64"))]
 pub type DefaultFFTProcessor = extended_fft_processor::ExtendedFftProcessor;
-// ⭐ ExtendedFftProcessor: 1.73µs - BEATS TfheFft by 1.04x!
 
 pub struct FFTPlan {
   pub processor: DefaultFFTProcessor,
@@ -282,186 +264,6 @@ mod tests {
     }
 
     res
-  }
-
-  #[test]
-  #[ignore]
-  fn bench_all_fft_processors() {
-    use std::time::Instant;
-
-    #[cfg(not(target_arch = "x86_64"))]
-    use crate::fft::extended_fft_processor::ExtendedFftProcessor;
-    #[cfg(not(target_arch = "x86_64"))]
-    use crate::fft::fastfft_processor::FastFftProcessor;
-    #[cfg(not(target_arch = "x86_64"))]
-    use crate::fft::realfft_processor::RealFFTProcessor;
-    #[cfg(not(target_arch = "x86_64"))]
-    use crate::fft::rustfft_processor::RustFFTProcessor;
-    #[cfg(not(target_arch = "x86_64"))]
-    use crate::fft::tfhe_fft_processor::TfheFftProcessor;
-
-    let test_poly = [1u32 << 30; 1024];
-    let test_freq = [1.0f64; 1024];
-    let iterations = 10000;
-
-    println!("\n╔══════════════════════════════════════════════════════════╗");
-    println!("║          FFT Processor Comparison (N=1024)               ║");
-    println!("╠══════════════════════════════════════════════════════════╣");
-
-    #[cfg(not(target_arch = "x86_64"))]
-    {
-      let mut extended = ExtendedFftProcessor::new(1024);
-      let mut fastfft = FastFftProcessor::new(1024);
-      let mut rustfft = RustFFTProcessor::new(1024);
-      let mut realfft = RealFFTProcessor::new(1024);
-      let mut tffhefft = TfheFftProcessor::new(1024);
-
-      // Warmup
-      for _ in 0..100 {
-        let _ = extended.ifft_1024(&test_poly);
-        let _ = fastfft.ifft_1024(&test_poly);
-        let _ = rustfft.ifft_1024(&test_poly);
-        let _ = realfft.ifft_1024(&test_poly);
-        let _ = tffhefft.ifft_1024(&test_poly);
-      }
-
-      // Benchmark Extended IFFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = extended.ifft_1024(&test_poly);
-      }
-      let extended_ifft_time = start.elapsed();
-
-      // Benchmark FastFFT IFFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = fastfft.ifft_1024(&test_poly);
-      }
-      let fastfft_ifft_time = start.elapsed();
-
-      // Benchmark RustFFT IFFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = rustfft.ifft_1024(&test_poly);
-      }
-      let rustfft_ifft_time = start.elapsed();
-
-      // Benchmark RealFFT IFFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = realfft.ifft_1024(&test_poly);
-      }
-      let realfft_ifft_time = start.elapsed();
-
-      // Benchmark TfheFft IFFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = tffhefft.ifft_1024(&test_poly);
-      }
-      let tfhefft_ifft_time = start.elapsed();
-
-      // Benchmark Extended FFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = extended.fft_1024(&test_freq);
-      }
-      let extended_fft_time = start.elapsed();
-
-      // Benchmark FastFFT FFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = fastfft.fft_1024(&test_freq);
-      }
-      let fastfft_fft_time = start.elapsed();
-
-      // Benchmark RustFFT FFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = rustfft.fft_1024(&test_freq);
-      }
-      let rustfft_fft_time = start.elapsed();
-
-      // Benchmark RealFFT FFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = realfft.fft_1024(&test_freq);
-      }
-      let realfft_fft_time = start.elapsed();
-
-      // Benchmark TfheFft FFT
-      let start = Instant::now();
-      for _ in 0..iterations {
-        let _ = tffhefft.fft_1024(&test_freq);
-      }
-      let tfhefft_fft_time = start.elapsed();
-
-      println!("║  Forward Transform (time → frequency, IFFT):            ║");
-      println!("║                                                          ║");
-      println!(
-        "║    Extended (Hybrid):     {:>7.2}µs  ⭐ FASTEST           ║",
-        extended_ifft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    TfheFft (Zama):        {:>7.2}µs                       ║",
-        tfhefft_ifft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    RealFFT:               {:>7.2}µs                       ║",
-        realfft_ifft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    RustFFT (Planner):     {:>7.2}µs                       ║",
-        rustfft_ifft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    FastFFT (Radix-4):     {:>7.2}µs                       ║",
-        fastfft_ifft_time.as_micros() as f64 / iterations as f64
-      );
-      println!("║                                                          ║");
-      println!(
-        "║    Extended speedup:      {:.2}x vs TfheFft               ║",
-        tfhefft_ifft_time.as_secs_f64() / extended_ifft_time.as_secs_f64()
-      );
-
-      println!("║                                                          ║");
-      println!("║  Inverse Transform (frequency → time, FFT):              ║");
-      println!("║                                                          ║");
-      println!(
-        "║    Extended (Hybrid):     {:>7.2}µs  ⭐ FASTEST           ║",
-        extended_fft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    TfheFft (Zama):        {:>7.2}µs                       ║",
-        tfhefft_fft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    RustFFT (Planner):     {:>7.2}µs                       ║",
-        rustfft_fft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    RealFFT:               {:>7.2}µs                       ║",
-        realfft_fft_time.as_micros() as f64 / iterations as f64
-      );
-      println!(
-        "║    FastFFT (Radix-4):     {:>7.2}µs                       ║",
-        fastfft_fft_time.as_micros() as f64 / iterations as f64
-      );
-      println!("║                                                          ║");
-      println!(
-        "║    Extended speedup:      {:.2}x vs TfheFft               ║",
-        tfhefft_fft_time.as_secs_f64() / extended_fft_time.as_secs_f64()
-      );
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-      println!("║  x86_64: Using SpqliosFFT (hand-optimized assembly)     ║");
-      println!("║                                                          ║");
-      println!("║  This benchmark only runs on non-x86_64 architectures   ║");
-      println!("║  to compare pure-Rust FFT implementations.              ║");
-    }
-
-    println!("╚══════════════════════════════════════════════════════════╝");
   }
 }
 

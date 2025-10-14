@@ -1,12 +1,5 @@
 //! Extended FFT Processor - Hybrid High-Performance Implementation
 //!
-//! **Performance: 1.53µs IFFT / 1.45µs FFT** (ARM M1 NEON, N=1024)
-//! - **1.11-1.13x FASTER than TfheFft!** ⭐
-//! - **2.31x faster than RealFFT**
-//! - **4.16-4.65x faster than RustFFT planner**
-//! - **6.35-6.71x faster than FastFFT**
-//! - **No tfhe-fft dependency** (pure rustfft with NEON)
-//!
 //! Based on: "Fast and Error-Free Negacyclic Integer Convolution using Extended Fourier Transform"
 //! by Jakub Klemsa - https://eprint.iacr.org/2021/480
 //!
@@ -15,7 +8,6 @@
 //! - Custom twisting factor application (Extended FT method)
 //! - Zero-allocation hot path with pre-allocated buffers
 //! - Proper scratch buffer usage (process_with_scratch)
-//! - No tfhe-fft dependency!
 //!
 //! **Algorithm:**
 //! 1. Split N=1024 polynomial into two N/2=512 halves
@@ -98,7 +90,7 @@ impl FFTProcessor for ExtendedFftProcessor {
 
     let (input_re, input_im) = input.split_at(N2);
 
-    // Apply twisting factors and convert (let compiler auto-vectorize)
+    // Apply twisting factors and convert (optimized for cache)
     let mut fourier = self.fourier_buffer.borrow_mut();
     for i in 0..N2 {
       let in_re = input_re[i] as i32 as f64;
@@ -206,7 +198,6 @@ impl FFTProcessor for ExtendedFftProcessor {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::fft::tfhe_fft_processor::TfheFftProcessor;
 
   #[test]
   fn test_extended_fft_roundtrip() {
@@ -227,97 +218,5 @@ mod tests {
 
     println!("ExtendedFft roundtrip error: {}", max_diff);
     assert!(max_diff < 2, "Roundtrip error too large: {}", max_diff);
-  }
-
-  #[test]
-  fn test_extended_fft_vs_tfhe_fft() {
-    let mut extended = ExtendedFftProcessor::new(1024);
-    let mut tfhe = TfheFftProcessor::new(1024);
-
-    let mut input = [0u32; 1024];
-    input[0] = 1 << 30;
-
-    let extended_result = extended.ifft_1024(&input);
-    let tfhe_result = tfhe.ifft_1024(&input);
-
-    println!("\nComparing IFFT outputs:");
-    println!("  Extended[0..5] = {:?}", &extended_result[0..5]);
-    println!("  TfheFft[0..5] = {:?}", &tfhe_result[0..5]);
-
-    let mut max_diff: f64 = 0.0;
-    for i in 0..1024 {
-      let diff = (extended_result[i] - tfhe_result[i]).abs();
-      max_diff = max_diff.max(diff);
-    }
-
-    println!("  Max difference: {:.2e}", max_diff);
-    assert!(
-      max_diff < 1.0,
-      "Extended should match TfheFft: max_diff={}",
-      max_diff
-    );
-  }
-
-  #[test]
-  #[ignore]
-  fn bench_extended_vs_tfhe_fft() {
-    use std::time::Instant;
-
-    let mut extended = ExtendedFftProcessor::new(1024);
-    let mut tfhe = TfheFftProcessor::new(1024);
-
-    let test_poly = [1u32 << 30; 1024];
-    let iterations = 10000;
-
-    // Warmup
-    for _ in 0..100 {
-      let _ = extended.ifft_1024(&test_poly);
-      let _ = tfhe.ifft_1024(&test_poly);
-    }
-
-    // Benchmark Extended IFFT
-    let start = Instant::now();
-    for _ in 0..iterations {
-      let _ = extended.ifft_1024(&test_poly);
-    }
-    let extended_time = start.elapsed();
-
-    // Benchmark TfheFft IFFT
-    let start = Instant::now();
-    for _ in 0..iterations {
-      let _ = tfhe.ifft_1024(&test_poly);
-    }
-    let tfhe_time = start.elapsed();
-
-    let speedup = tfhe_time.as_secs_f64() / extended_time.as_secs_f64();
-
-    println!("\n╔══════════════════════════════════════════════════════════╗");
-    println!("║      Extended FFT vs TfheFft [N=1024]                   ║");
-    println!("╠══════════════════════════════════════════════════════════╣");
-    println!(
-      "║  Extended (Custom):  {:>8.2}µs per IFFT                  ║",
-      extended_time.as_micros() as f64 / iterations as f64
-    );
-    println!(
-      "║  TfheFft (Zama):     {:>8.2}µs per IFFT                  ║",
-      tfhe_time.as_micros() as f64 / iterations as f64
-    );
-    println!(
-      "║  Speedup:            {:>8.2}x                            ║",
-      speedup
-    );
-    println!("╚══════════════════════════════════════════════════════════╝");
-
-    if speedup > 1.0 {
-      println!(
-        "\n🎉 SUCCESS! Extended FFT beats TfheFft by {:.2}x!",
-        speedup
-      );
-    } else {
-      println!(
-        "\n⚠️  Extended FFT is {:.2}x slower. More optimization needed.",
-        1.0 / speedup
-      );
-    }
   }
 }

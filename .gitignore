@@ -10,4 +10,4 @@ Cargo.lock
 **/*.rs.bk
 .vscode
 
-*.md
+/graveyard
