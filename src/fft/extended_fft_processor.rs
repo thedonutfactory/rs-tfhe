@@ -16,6 +16,7 @@
 //! 4. Scale and convert output
 
 use super::FFTProcessor;
+use crate::params;
 use rustfft::num_complex::Complex;
 use rustfft::Fft;
 use std::cell::RefCell;
@@ -84,7 +85,7 @@ impl FFTProcessor for ExtendedFftProcessor {
     ExtendedFftProcessor::new(n)
   }
 
-  fn ifft_1024(&mut self, input: &[u32; 1024]) -> [f64; 1024] {
+  fn ifft_1024(&mut self, input: &[params::Torus; 1024]) -> [f64; 1024] {
     const N: usize = 1024;
     const N2: usize = N / 2; // 512
 
@@ -116,7 +117,7 @@ impl FFTProcessor for ExtendedFftProcessor {
     result
   }
 
-  fn fft_1024(&mut self, input: &[f64; 1024]) -> [u32; 1024] {
+  fn fft_1024(&mut self, input: &[f64; 1024]) -> [params::Torus; 1024] {
     const N: usize = 1024;
     const N2: usize = N / 2; // 512
 
@@ -135,7 +136,7 @@ impl FFTProcessor for ExtendedFftProcessor {
 
     // Apply inverse twisting and convert to u32
     let normalization = 1.0 / (N2 as f64);
-    let mut result = [0u32; N];
+    let mut result = [params::ZERO_TORUS; N];
     for i in 0..N2 {
       let w_re = self.twisties_re[i];
       let w_im = self.twisties_im[i];
@@ -143,26 +144,30 @@ impl FFTProcessor for ExtendedFftProcessor {
       let f_im = fourier[i].im;
       let tmp_re = (f_re * w_re + f_im * w_im) * normalization;
       let tmp_im = (f_im * w_re - f_re * w_im) * normalization;
-      result[i] = tmp_re.round() as i64 as u32;
-      result[i + N2] = tmp_im.round() as i64 as u32;
+      result[i] = tmp_re.round() as i64 as params::Torus;
+      result[i + N2] = tmp_im.round() as i64 as params::Torus;
     }
 
     result
   }
 
-  fn ifft(&mut self, input: &[u32]) -> Vec<f64> {
-    let mut arr = [0u32; 1024];
+  fn ifft(&mut self, input: &[params::Torus]) -> Vec<f64> {
+    let mut arr = [params::ZERO_TORUS; 1024];
     arr.copy_from_slice(input);
     self.ifft_1024(&arr).to_vec()
   }
 
-  fn fft(&mut self, input: &[f64]) -> Vec<u32> {
+  fn fft(&mut self, input: &[f64]) -> Vec<params::Torus> {
     let mut arr = [0f64; 1024];
     arr.copy_from_slice(input);
     self.fft_1024(&arr).to_vec()
   }
 
-  fn poly_mul_1024(&mut self, a: &[u32; 1024], b: &[u32; 1024]) -> [u32; 1024] {
+  fn poly_mul_1024(
+    &mut self,
+    a: &[params::Torus; 1024],
+    b: &[params::Torus; 1024],
+  ) -> [params::Torus; 1024] {
     let a_fft = self.ifft_1024(a);
     let b_fft = self.ifft_1024(b);
 
@@ -182,10 +187,10 @@ impl FFTProcessor for ExtendedFftProcessor {
     self.fft_1024(&result_fft)
   }
 
-  fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+  fn poly_mul(&mut self, a: &Vec<params::Torus>, b: &Vec<params::Torus>) -> Vec<params::Torus> {
     if a.len() == 1024 && b.len() == 1024 {
-      let mut a_arr = [0u32; 1024];
-      let mut b_arr = [0u32; 1024];
+      let mut a_arr = [params::ZERO_TORUS; 1024];
+      let mut b_arr = [params::ZERO_TORUS; 1024];
       a_arr.copy_from_slice(a);
       b_arr.copy_from_slice(b);
       self.poly_mul_1024(&a_arr, &b_arr).to_vec()
@@ -203,7 +208,7 @@ mod tests {
   fn test_extended_fft_roundtrip() {
     let mut proc = ExtendedFftProcessor::new(1024);
 
-    let mut input = [0u32; 1024];
+    let mut input = [0; 1024];
     input[0] = 1 << 30;
     input[5] = 1 << 29;
 
