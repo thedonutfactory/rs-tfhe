@@ -102,16 +102,16 @@ fn bench_fft_operations(c: &mut Criterion) {
   let mut input = [0u32; 1024];
   input.iter_mut().for_each(|e| *e = rng.gen::<u32>());
 
-  let freq = plan.processor.ifft_1024(&input);
+  let freq = plan.processor.ifft::<1024>(&input);
 
   let mut group = c.benchmark_group("fft_operations");
 
   group.bench_function("fft_forward_1024", |b| {
-    b.iter(|| black_box(plan.processor.ifft_1024(black_box(&input))))
+    b.iter(|| black_box(plan.processor.ifft::<1024>(black_box(&input))))
   });
 
   group.bench_function("fft_inverse_1024", |b| {
-    b.iter(|| black_box(plan.processor.fft_1024(black_box(&freq))))
+    b.iter(|| black_box(plan.processor.fft::<1024>(black_box(&freq))))
   });
 
   group.bench_function("poly_mul_1024", |b| {
@@ -119,7 +119,7 @@ fn bench_fft_operations(c: &mut Criterion) {
       black_box(
         plan
           .processor
-          .poly_mul_1024(black_box(&input), black_box(&input)),
+          .poly_mul::<1024>(black_box(&input), black_box(&input)),
       )
     })
   });

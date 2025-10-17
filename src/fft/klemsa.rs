@@ -26,7 +26,7 @@ use std::sync::Arc;
 /// Extended FFT processor with rustfft optimization
 ///
 /// Uses rustfft's Radix4 with scratch buffers + custom twisting
-pub struct ExtendedFftProcessor {
+pub struct KlemsaProcessor {
   // Pre-computed twisting factors (2N-th roots of unity)
   twisties_re: Vec<f64>,
   twisties_im: Vec<f64>,
@@ -39,12 +39,12 @@ pub struct ExtendedFftProcessor {
   scratch_inv: RefCell<Vec<Complex<f64>>>,
 }
 
-impl ExtendedFftProcessor {
+impl KlemsaProcessor {
   pub fn new(n: usize) -> Self {
-    assert_eq!(n, 1024, "Only N=1024 supported for now");
     assert!(n.is_power_of_two(), "N must be power of two");
+    assert!(n >= 2, "N must be at least 2");
 
-    let n2 = n / 2; // 512
+    let n2 = n / 2;
 
     // Compute twisting factors: exp(i*π*k/N) for k=0..N/2-1
     let mut twisties_re = Vec::with_capacity(n2);
@@ -68,7 +68,7 @@ impl ExtendedFftProcessor {
     let scratch_fwd_len = fft_n2_fwd.get_inplace_scratch_len();
     let scratch_inv_len = fft_n2_inv.get_inplace_scratch_len();
 
-    ExtendedFftProcessor {
+    KlemsaProcessor {
       twisties_re,
       twisties_im,
       fft_n2_fwd,
@@ -80,20 +80,19 @@ impl ExtendedFftProcessor {
   }
 }
 
-impl FFTProcessor for ExtendedFftProcessor {
+impl FFTProcessor for KlemsaProcessor {
   fn new(n: usize) -> Self {
-    ExtendedFftProcessor::new(n)
+    KlemsaProcessor::new(n)
   }
 
-  fn ifft_1024(&mut self, input: &[params::Torus; 1024]) -> [f64; 1024] {
-    const N: usize = 1024;
-    const N2: usize = N / 2; // 512
+  fn ifft<const N: usize>(&mut self, input: &[params::Torus; N]) -> [f64; N] {
+    let n2 = N / 2;
 
-    let (input_re, input_im) = input.split_at(N2);
+    let (input_re, input_im) = input.split_at(n2);
 
     // Apply twisting factors and convert (optimized for cache)
     let mut fourier = self.fourier_buffer.borrow_mut();
-    for i in 0..N2 {
+    for i in 0..n2 {
       let in_re = input_re[i] as i32 as f64;
       let in_im = input_im[i] as i32 as f64;
       let w_re = self.twisties_re[i];
@@ -109,22 +108,21 @@ impl FFTProcessor for ExtendedFftProcessor {
 
     // Scale by 2 and convert to output
     let mut result = [0.0f64; N];
-    for i in 0..N2 {
+    for i in 0..n2 {
       result[i] = fourier[i].re * 2.0;
-      result[i + N2] = fourier[i].im * 2.0;
+      result[i + n2] = fourier[i].im * 2.0;
     }
 
     result
   }
 
-  fn fft_1024(&mut self, input: &[f64; 1024]) -> [params::Torus; 1024] {
-    const N: usize = 1024;
-    const N2: usize = N / 2; // 512
+  fn fft<const N: usize>(&mut self, input: &[f64; N]) -> [params::Torus; N] {
+    let n2 = N / 2;
 
     // Convert to complex and scale
-    let (input_re, input_im) = input.split_at(N2);
+    let (input_re, input_im) = input.split_at(n2);
     let mut fourier = self.fourier_buffer.borrow_mut();
-    for i in 0..N2 {
+    for i in 0..n2 {
       fourier[i] = Complex::new(input_re[i] * 0.5, input_im[i] * 0.5);
     }
 
@@ -135,9 +133,9 @@ impl FFTProcessor for ExtendedFftProcessor {
       .process_with_scratch(&mut fourier, &mut scratch);
 
     // Apply inverse twisting and convert to u32
-    let normalization = 1.0 / (N2 as f64);
+    let normalization = 1.0 / (n2 as f64);
     let mut result = [params::ZERO_TORUS; N];
-    for i in 0..N2 {
+    for i in 0..n2 {
       let w_re = self.twisties_re[i];
       let w_im = self.twisties_im[i];
       let f_re = fourier[i].re;
@@ -145,83 +143,61 @@ impl FFTProcessor for ExtendedFftProcessor {
       let tmp_re = (f_re * w_re + f_im * w_im) * normalization;
       let tmp_im = (f_im * w_re - f_re * w_im) * normalization;
       result[i] = tmp_re.round() as i64 as params::Torus;
-      result[i + N2] = tmp_im.round() as i64 as params::Torus;
+      result[i + n2] = tmp_im.round() as i64 as params::Torus;
     }
 
     result
   }
 
-  fn ifft(&mut self, input: &[params::Torus]) -> Vec<f64> {
-    let mut arr = [params::ZERO_TORUS; 1024];
-    arr.copy_from_slice(input);
-    self.ifft_1024(&arr).to_vec()
-  }
-
-  fn fft(&mut self, input: &[f64]) -> Vec<params::Torus> {
-    let mut arr = [0f64; 1024];
-    arr.copy_from_slice(input);
-    self.fft_1024(&arr).to_vec()
-  }
-
-  fn poly_mul_1024(
+  fn poly_mul<const N: usize>(
     &mut self,
-    a: &[params::Torus; 1024],
-    b: &[params::Torus; 1024],
-  ) -> [params::Torus; 1024] {
-    let a_fft = self.ifft_1024(a);
-    let b_fft = self.ifft_1024(b);
+    a: &[params::Torus; N],
+    b: &[params::Torus; N],
+  ) -> [params::Torus; N] {
+    let a_fft = self.ifft::<N>(a);
+    let b_fft = self.ifft::<N>(b);
 
     // Complex multiplication with 0.5 scaling for negacyclic
-    let mut result_fft = [0.0f64; 1024];
-    const N2: usize = 512;
-    for i in 0..N2 {
+    let mut result_fft = [0.0f64; N];
+    let n2 = N / 2;
+    for i in 0..n2 {
       let ar = a_fft[i];
-      let ai = a_fft[i + N2];
+      let ai = a_fft[i + n2];
       let br = b_fft[i];
-      let bi = b_fft[i + N2];
+      let bi = b_fft[i + n2];
 
       result_fft[i] = (ar * br - ai * bi) * 0.5;
-      result_fft[i + N2] = (ar * bi + ai * br) * 0.5;
+      result_fft[i + n2] = (ar * bi + ai * br) * 0.5;
     }
 
-    self.fft_1024(&result_fft)
-  }
-
-  fn poly_mul(&mut self, a: &Vec<params::Torus>, b: &Vec<params::Torus>) -> Vec<params::Torus> {
-    if a.len() == 1024 && b.len() == 1024 {
-      let mut a_arr = [params::ZERO_TORUS; 1024];
-      let mut b_arr = [params::ZERO_TORUS; 1024];
-      a_arr.copy_from_slice(a);
-      b_arr.copy_from_slice(b);
-      self.poly_mul_1024(&a_arr, &b_arr).to_vec()
-    } else {
-      vec![0; a.len()]
-    }
+    self.fft::<N>(&result_fft)
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::params::TORUS_SIZE;
 
   #[test]
-  fn test_extended_fft_roundtrip() {
-    let mut proc = ExtendedFftProcessor::new(1024);
+  fn test_klemsa_roundtrip() {
+    const N: usize = 1024;
+    let mut proc = KlemsaProcessor::new(N);
 
-    let mut input = [0; 1024];
-    input[0] = 1 << 30;
-    input[5] = 1 << 29;
+    let mut input = [0; N];
+    input[0] = 1 << (TORUS_SIZE - 1);
+    input[5] = 1 << (TORUS_SIZE - 2);
 
-    let freq = proc.ifft_1024(&input);
-    let output = proc.fft_1024(&freq);
+    let freq = proc.ifft::<N>(&input);
+    let output = proc.fft::<N>(&freq);
 
     let mut max_diff: i64 = 0;
-    for i in 0..1024 {
+    for i in 0..N {
       let diff = (output[i] as i64 - input[i] as i64).abs();
       max_diff = max_diff.max(diff);
     }
 
-    println!("ExtendedFft roundtrip error: {}", max_diff);
+    println!("Klemsa roundtrip error: {}", max_diff);
     assert!(max_diff < 2, "Roundtrip error too large: {}", max_diff);
   }
 }

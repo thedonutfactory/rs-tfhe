@@ -40,6 +40,12 @@
 
 pub type Torus = u32;
 pub type HalfTorus = i32;
+pub type IntTorus = i64;
+
+// pub type Torus = u16;
+// pub type HalfTorus = i16;
+// pub type IntTorus = i32;
+
 pub const TORUS_SIZE: usize = std::mem::size_of::<Torus>() * 8;
 pub const ZERO_TORUS: Torus = 0;
 

@@ -1,6 +1,8 @@
 use crate::fft::{FFTPlan, FFTProcessor};
 use crate::key;
 use crate::params;
+use crate::params::Torus;
+use crate::params::TORUS_SIZE;
 use crate::tlwe;
 use crate::utils;
 use rand::Rng;
@@ -8,8 +10,8 @@ use std::convert::TryInto;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TRLWELv1 {
-  pub a: [u32; params::trlwe_lv1::N],
-  pub b: [u32; params::trlwe_lv1::N],
+  pub a: [Torus; params::trlwe_lv1::N],
+  pub b: [Torus; params::trlwe_lv1::N],
 }
 
 impl TRLWELv1 {
@@ -35,7 +37,7 @@ impl TRLWELv1 {
     trlwe.b = utils::gussian_f64_vec(p, &normal_distr, &mut rng)
       .try_into()
       .unwrap();
-    let poly_res = plan.processor.poly_mul_1024(&trlwe.a, key);
+    let poly_res = plan.processor.poly_mul::<1024>(&trlwe.a, key);
 
     for (bref, rval) in trlwe.b.iter_mut().zip(poly_res.iter()) {
       *bref = bref.wrapping_add(*rval);
@@ -60,7 +62,7 @@ impl TRLWELv1 {
 
   #[allow(dead_code)]
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Vec<bool> {
-    let poly_res = plan.processor.poly_mul_1024(&self.a, key);
+    let poly_res = plan.processor.poly_mul::<1024>(&self.a, key);
     let mut res: Vec<bool> = Vec::new();
     for i in 0..self.a.len() {
       let value = (self.b[i].wrapping_sub(poly_res[i])) as i32;
@@ -83,8 +85,8 @@ pub struct TRLWELv1FFT {
 impl TRLWELv1FFT {
   pub fn new(trlwe: &TRLWELv1, plan: &mut FFTPlan) -> TRLWELv1FFT {
     TRLWELv1FFT {
-      a: plan.processor.ifft_1024(&trlwe.a),
-      b: plan.processor.ifft_1024(&trlwe.b),
+      a: plan.processor.ifft::<1024>(&trlwe.a),
+      b: plan.processor.ifft::<1024>(&trlwe.b),
     }
   }
 
@@ -104,7 +106,7 @@ pub fn sample_extract_index(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv1 {
     if i <= k {
       res.p[i] = trlwe.a[k - i];
     } else {
-      res.p[i] = u32::MAX - trlwe.a[N + k - i];
+      res.p[i] = TORUS_SIZE as Torus - trlwe.a[N + k - i];
     }
   }
   *res.b_mut() = trlwe.b[k];
@@ -120,7 +122,7 @@ pub fn sample_extract_index_2(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv0 {
     if i <= k {
       res.p[i] = trlwe.a[k - i];
     } else {
-      res.p[i] = u32::MAX - trlwe.a[N + k - i];
+      res.p[i] = TORUS_SIZE as Torus - trlwe.a[N + k - i];
     }
   }
   *res.b_mut() = trlwe.b[k];
