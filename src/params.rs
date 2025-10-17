@@ -39,6 +39,15 @@
 /// ```
 
 pub type Torus = u32;
+pub type HalfTorus = i32;
+pub type IntTorus = i64;
+
+// pub type Torus = u16;
+// pub type HalfTorus = i16;
+// pub type IntTorus = i32;
+
+pub const TORUS_SIZE: usize = std::mem::size_of::<Torus>() * 8;
+pub const ZERO_TORUS: Torus = 0;
 
 // ============================================================================
 // 80-BIT SECURITY PARAMETERS (Performance-Optimized)
@@ -104,7 +113,7 @@ pub mod implementation {
   pub mod trgsw_lv1 {
     pub const N: usize = super::tlwe_lv1::N;
     pub const NBIT: usize = 10;
-    pub const BGBIT: u32 = 6;
+    pub const BGBIT: Torus = 6;
     pub const BG: u32 = 1 << BGBIT;
     pub const L: usize = 3;
     pub const BASEBIT: usize = 2;
@@ -141,8 +150,8 @@ pub mod implementation {
   pub mod trgsw_lv1 {
     pub const N: usize = super::tlwe_lv1::N;
     pub const NBIT: usize = 10;
-    pub const BGBIT: u32 = 6;
-    pub const BG: u32 = 1 << BGBIT;
+    pub const BGBIT: crate::params::Torus = 6;
+    pub const BG: crate::params::Torus = 1 << BGBIT;
     pub const L: usize = 3;
     pub const BASEBIT: usize = 2;
     pub const IKS_T: usize = 9;

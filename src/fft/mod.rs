@@ -29,55 +29,9 @@
 //! to the primitive 2N-th roots of unity needed for polynomial multiplication
 //! modulo X^N+1.
 
-/// FFT Processor trait for negacyclic polynomial multiplication in R[X]/(X^N+1)
-///
-/// All implementations must provide mathematically equivalent operations
-/// for TFHE's core polynomial arithmetic.
-pub trait FFTProcessor {
-  /// Create a new FFT processor for polynomials of size n
-  fn new(n: usize) -> Self;
-
-  /// Forward FFT: time domain (N values) → frequency domain (N values)
-  /// Input: N torus32 values representing polynomial coefficients
-  /// Output: N f64 values (N/2 complex stored as [re_0..re_N/2-1, im_0..im_N/2-1])
-  fn ifft(&mut self, input: &[u32]) -> Vec<f64>;
-
-  /// Inverse FFT: frequency domain (N values) → time domain (N values)
-  /// Input: N f64 values (N/2 complex stored as [re_0..re_N/2-1, im_0..im_N/2-1])
-  /// Output: N torus32 values representing polynomial coefficients
-  fn fft(&mut self, input: &[f64]) -> Vec<u32>;
-
-  /// Forward FFT for fixed-size 1024 arrays (optimized version)
-  fn ifft_1024(&mut self, input: &[u32; 1024]) -> [f64; 1024];
-
-  /// Inverse FFT for fixed-size 1024 arrays (optimized version)
-  fn fft_1024(&mut self, input: &[f64; 1024]) -> [u32; 1024];
-
-  /// Negacyclic polynomial multiplication: a(X) * b(X) mod (X^N+1)
-  /// Uses FFT for O(N log N) complexity instead of O(N²)
-  fn poly_mul_1024(&mut self, a: &[u32; 1024], b: &[u32; 1024]) -> [u32; 1024];
-
-  /// Negacyclic polynomial multiplication for variable-length vectors
-  /// Fallback to poly_mul_1024 for 1024-sized inputs, otherwise uses Vec variants
-  fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32>;
-
-  /// Batch IFFT: Transform multiple polynomials at once
-  /// This can be more efficient than calling ifft_1024 multiple times
-  /// Input: slice of N polynomials (each 1024 elements)
-  /// Output: Vec of N frequency-domain representations
-  fn batch_ifft_1024(&mut self, inputs: &[[u32; 1024]]) -> Vec<[f64; 1024]> {
-    // Default implementation: just loop (subclasses can optimize)
-    inputs.iter().map(|input| self.ifft_1024(input)).collect()
-  }
-
-  /// Batch FFT: Transform multiple frequency-domain representations at once
-  /// Input: slice of N frequency-domain arrays (each 1024 elements)
-  /// Output: Vec of N time-domain polynomials
-  fn batch_fft_1024(&mut self, inputs: &[[f64; 1024]]) -> Vec<[u32; 1024]> {
-    // Default implementation: just loop (subclasses can optimize)
-    inputs.iter().map(|input| self.fft_1024(input)).collect()
-  }
-}
+use crate::params;
+use crate::params::Torus;
+use std::cell::RefCell;
 
 // Platform-specific implementations
 #[cfg(target_arch = "x86_64")]
@@ -87,9 +41,9 @@ mod spqlios;
 #[cfg(target_arch = "x86_64")]
 pub type DefaultFFTProcessor = spqlios::SpqliosFFT;
 
-pub mod extended_fft_processor;
+pub mod klemsa;
 #[cfg(not(target_arch = "x86_64"))]
-pub type DefaultFFTProcessor = extended_fft_processor::ExtendedFftProcessor;
+pub type DefaultFFTProcessor = klemsa::KlemsaProcessor;
 
 pub struct FFTPlan {
   pub processor: DefaultFFTProcessor,
@@ -104,9 +58,6 @@ impl FFTPlan {
     }
   }
 }
-
-use crate::params;
-use std::cell::RefCell;
 
 thread_local!(pub static FFT_PLAN: RefCell<FFTPlan> = RefCell::new(FFTPlan::new(params::trgsw_lv1::N)));
 
@@ -123,25 +74,60 @@ thread_local!(pub static FFT_PLAN: RefCell<FFTPlan> = RefCell::new(FFTPlan::new(
 // - Metal:               ~30-50ms per gate (GPU overhead on integrated GPUs)
 // - Hand-coded NEON asm: ~35-50ms per gate (could approach x86_64 performance)
 
+/// FFT Processor trait for negacyclic polynomial multiplication in R[X]/(X^N+1)
+///
+/// All implementations must provide mathematically equivalent operations
+/// for TFHE's core polynomial arithmetic.
+pub trait FFTProcessor {
+  /// Create a new FFT processor for polynomials of size n
+  fn new(n: usize) -> Self;
+
+  /// Generic forward FFT for any power-of-2 size N
+  /// Input: N torus32 values representing polynomial coefficients
+  /// Output: N f64 values (N/2 complex stored as [re_0..re_N/2-1, im_0..im_N/2-1])
+  fn ifft<const N: usize>(&mut self, input: &[Torus; N]) -> [f64; N];
+
+  /// Generic inverse FFT for any power-of-2 size N
+  /// Input: N f64 values (N/2 complex stored as [re_0..re_N/2-1, im_0..im_N/2-1])
+  /// Output: N torus32 values representing polynomial coefficients
+  fn fft<const N: usize>(&mut self, input: &[f64; N]) -> [Torus; N];
+
+  /// Generic negacyclic polynomial multiplication for any power-of-2 size N
+  /// Computes: a(X) * b(X) mod (X^N+1)
+  fn poly_mul<const N: usize>(&mut self, a: &[Torus; N], b: &[Torus; N]) -> [Torus; N];
+
+  /// Generic batch IFFT for any power-of-2 size N
+  fn batch_ifft<const N: usize>(&mut self, inputs: &[[Torus; N]]) -> Vec<[f64; N]> {
+    inputs.iter().map(|input| self.ifft::<N>(input)).collect()
+  }
+
+  /// Generic batch FFT for any power-of-2 size N
+  fn batch_fft<const N: usize>(&mut self, inputs: &[[f64; N]]) -> Vec<[Torus; N]> {
+    inputs.iter().map(|input| self.fft::<N>(input)).collect()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use crate::fft::FFTPlan;
   use crate::fft::FFTProcessor;
   use crate::params;
+  use crate::params::HalfTorus;
+  use crate::params::Torus;
   use rand::Rng;
 
   #[test]
   fn test_fft_ifft() {
-    let n = 1024;
-    let mut plan = FFTPlan::new(n);
+    const N: usize = 1024;
+    let mut plan = FFTPlan::new(N);
     let mut rng = rand::thread_rng();
-    let mut a: Vec<u32> = vec![0u32; n];
-    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+    let mut a: [Torus; N] = [0; N];
+    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
 
-    let a_fft = plan.processor.ifft(&a);
-    let res = plan.processor.fft(&a_fft);
-    for i in 0..n {
-      let diff = a[i] as i32 - res[i] as i32;
+    let a_fft = plan.processor.ifft::<N>(&a);
+    let res = plan.processor.fft::<N>(&a_fft);
+    for i in 0..N {
+      let diff = a[i] as HalfTorus - res[i] as HalfTorus;
       assert!(diff < 2 && diff > -2);
       println!("{} {} {}", a_fft[i], a[i], res[i]);
     }
@@ -149,18 +135,18 @@ mod tests {
 
   #[test]
   fn test_fft_poly_mul() {
-    let n = 1024;
-    let mut plan = FFTPlan::new(n);
+    const N: usize = 1024;
+    let mut plan = FFTPlan::new(N);
     let mut rng = rand::thread_rng();
-    let mut a: Vec<u32> = vec![0u32; n];
-    let mut b: Vec<u32> = vec![0u32; n];
-    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+    let mut a: [Torus; N] = [0; N];
+    let mut b: [Torus; N] = [0; N];
+    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
     b.iter_mut()
-      .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
+      .for_each(|e| *e = rng.gen::<Torus>() % params::trgsw_lv1::BG as Torus);
 
-    let fft_res = plan.processor.poly_mul(&a, &b);
-    let res = poly_mul(&a.to_vec(), &b.to_vec());
-    for i in 0..n {
+    let fft_res = plan.processor.poly_mul::<N>(&a, &b);
+    let res = poly_mul::<N>(&a, &b);
+    for i in 0..N {
       let diff = res[i] as i64 - fft_res[i] as i64;
       assert!(
         diff < 2 && diff > -2,
@@ -175,12 +161,13 @@ mod tests {
 
   #[test]
   fn test_fft_simple() {
-    let mut plan = FFTPlan::new(1024);
+    const N: usize = 1024;
+    let mut plan = FFTPlan::new(N);
     // Delta function test
-    let mut a = [0u32; 1024];
+    let mut a = [0; 1024];
     a[0] = 1000;
-    let freq = plan.processor.ifft_1024(&a);
-    let res = plan.processor.fft_1024(&freq);
+    let freq = plan.processor.ifft::<N>(&a);
+    let res = plan.processor.fft::<N>(&freq);
     println!(
       "Delta: in[0]={}, out[0]={}, diff={}",
       a[0],
@@ -192,16 +179,17 @@ mod tests {
 
   #[test]
   fn test_fft_ifft_1024() {
-    let mut plan = FFTPlan::new(1024);
+    const N: usize = 1024;
+    let mut plan = FFTPlan::new(N);
     let mut rng = rand::thread_rng();
-    let mut a = [0u32; 1024];
-    a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+    let mut a = [0; N];
+    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
 
-    let a_fft = plan.processor.ifft_1024(&a);
-    let res = plan.processor.fft_1024(&a_fft);
+    let a_fft = plan.processor.ifft::<N>(&a);
+    let res = plan.processor.fft::<N>(&a_fft);
 
     let mut max_diff = 0i64;
-    for i in 0..1024 {
+    for i in 0..N {
       let diff = (a[i] as i64 - res[i] as i64).abs();
       if diff > max_diff {
         max_diff = diff;
@@ -209,7 +197,7 @@ mod tests {
     }
     println!("Max difference: {}", max_diff);
 
-    for i in 0..1024 {
+    for i in 0..N {
       let diff = a[i] as i32 - res[i] as i32;
       assert!(
         diff < 2 && diff > -2,
@@ -224,18 +212,19 @@ mod tests {
 
   #[test]
   fn test_fft_poly_mul_1024() {
-    let mut plan = FFTPlan::new(1024);
+    const N: usize = 1024;
+    let mut plan = FFTPlan::new(N);
     let mut rng = rand::thread_rng();
     for _i in 0..100 {
-      let mut a = [0u32; 1024];
-      let mut b = [0u32; 1024];
-      a.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+      let mut a = [0; N];
+      let mut b = [0; N];
+      a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
       b.iter_mut()
-        .for_each(|e| *e = rng.gen::<u32>() % params::trgsw_lv1::BG as u32);
+        .for_each(|e| *e = rng.gen::<Torus>() % params::trgsw_lv1::BG as Torus);
 
-      let fft_res = plan.processor.poly_mul_1024(&a, &b);
-      let res = poly_mul(&a.to_vec(), &b.to_vec());
-      for i in 0..1024 {
+      let fft_res = plan.processor.poly_mul::<N>(&a, &b);
+      let res = poly_mul::<N>(&a, &b);
+      for i in 0..N {
         let diff = res[i] as i64 - fft_res[i] as i64;
         assert!(
           diff < 2 && diff > -2,
@@ -249,9 +238,9 @@ mod tests {
     }
   }
 
-  fn poly_mul(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+  fn poly_mul<const N: usize>(a: &[Torus; N], b: &[Torus; N]) -> [Torus; N] {
     let n = a.len();
-    let mut res: Vec<u32> = vec![0u32; n];
+    let mut res: Vec<Torus> = vec![0; n];
 
     for i in 0..n {
       for j in 0..n {
@@ -263,7 +252,7 @@ mod tests {
       }
     }
 
-    res
+    res.try_into().unwrap()
   }
 }
 

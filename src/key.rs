@@ -1,5 +1,8 @@
 use crate::fft::FFT_PLAN;
 use crate::params;
+use crate::params::Torus;
+use crate::params::TORUS_SIZE;
+use crate::params::ZERO_TORUS;
 use crate::tlwe;
 use crate::trgsw;
 use crate::trlwe;
@@ -10,8 +13,8 @@ const TRGSWLV1_N: usize = params::trgsw_lv1::N;
 const TRGSWLV1_IKS_T: usize = params::trgsw_lv1::IKS_T;
 const TRGSWLV1_BASE: usize = 1 << params::trgsw_lv1::BASEBIT;
 
-pub type SecretKeyLv0 = [u32; params::tlwe_lv0::N];
-pub type SecretKeyLv1 = [u32; params::tlwe_lv1::N];
+pub type SecretKeyLv0 = [Torus; params::tlwe_lv0::N];
+pub type SecretKeyLv1 = [Torus; params::tlwe_lv1::N];
 pub type KeySwitchingKey = Vec<tlwe::TLWELv0>;
 pub type BootstrappingKey = Vec<trgsw::TRGSWLv1FFT>;
 
@@ -24,23 +27,23 @@ impl SecretKey {
   pub fn new() -> Self {
     let mut rng = rand::thread_rng();
     let mut key = SecretKey {
-      key_lv0: [0u32; params::tlwe_lv0::N],
-      key_lv1: [0u32; params::tlwe_lv1::N],
+      key_lv0: [ZERO_TORUS; params::tlwe_lv0::N],
+      key_lv1: [ZERO_TORUS; params::tlwe_lv1::N],
     };
     key
       .key_lv0
       .iter_mut()
-      .for_each(|e| *e = rng.gen::<bool>() as u32);
+      .for_each(|e| *e = rng.gen::<bool>() as Torus);
     key
       .key_lv1
       .iter_mut()
-      .for_each(|e| *e = rng.gen::<bool>() as u32);
+      .for_each(|e| *e = rng.gen::<bool>() as Torus);
     key
   }
 }
 
 pub struct CloudKey {
-  pub decomposition_offset: u32,
+  pub decomposition_offset: Torus,
   pub blind_rotate_testvec: trlwe::TRLWELv1,
   pub key_switching_key: KeySwitchingKey,
   pub bootstrapping_key: BootstrappingKey,
@@ -66,12 +69,14 @@ impl CloudKey {
   }
 }
 
-pub fn gen_decomposition_offset() -> u32 {
-  let mut offset: u32 = 0;
+pub fn gen_decomposition_offset() -> Torus {
+  let mut offset: Torus = 0;
 
-  for i in 0..(params::trgsw_lv1::L as u32) {
-    offset = offset
-      .wrapping_add(params::trgsw_lv1::BG / 2 * (1 << (32 - (i + 1) * params::trgsw_lv1::BGBIT)));
+  for i in 0..(params::trgsw_lv1::L as Torus) {
+    offset = offset.wrapping_add(
+      params::trgsw_lv1::BG / 2
+        * (1 << (TORUS_SIZE - (i + 1) as usize * params::trgsw_lv1::BGBIT as usize)),
+    );
   }
 
   offset

@@ -1,5 +1,8 @@
 use crate::key;
 use crate::params;
+use crate::params::HalfTorus;
+use crate::params::Torus;
+use crate::params::ZERO_TORUS;
 use crate::utils;
 use rand::Rng;
 use std::iter::Iterator;
@@ -7,7 +10,7 @@ use std::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Debug, Copy, Clone)]
 pub struct TLWELv0 {
-  pub p: [u32; params::tlwe_lv0::N + 1],
+  pub p: [Torus; params::tlwe_lv0::N + 1],
 }
 
 impl TLWELv0 {
@@ -17,21 +20,21 @@ impl TLWELv0 {
     }
   }
 
-  pub fn b(&self) -> u32 {
+  pub fn b(&self) -> Torus {
     self.p[params::tlwe_lv0::N]
   }
 
-  pub fn b_mut(&mut self) -> &mut u32 {
+  pub fn b_mut(&mut self) -> &mut Torus {
     &mut self.p[params::tlwe_lv0::N]
   }
 
   pub fn encrypt_f64(p: f64, alpha: f64, key: &key::SecretKeyLv0) -> TLWELv0 {
     let mut rng = rand::thread_rng();
     let mut tlwe = TLWELv0::new();
-    let mut inner_product: u32 = 0;
+    let mut inner_product: Torus = 0;
 
     for i in 0..key.len() {
-      let rand_u32: u32 = rng.gen();
+      let rand_u32: Torus = rng.gen();
       inner_product = inner_product.wrapping_add(key[i] * rand_u32);
       tlwe.p[i] = rand_u32;
     }
@@ -49,12 +52,12 @@ impl TLWELv0 {
   }
 
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv0) -> bool {
-    let mut inner_product: u32 = 0;
+    let mut inner_product: Torus = 0;
     for i in 0..key.len() {
       inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
     }
 
-    let res_torus = (self.p[params::tlwe_lv0::N].wrapping_sub(inner_product)) as i32;
+    let res_torus = (self.p[params::tlwe_lv0::N].wrapping_sub(inner_product)) as HalfTorus;
     res_torus >= 0
   }
 }
@@ -89,7 +92,7 @@ impl Neg for TLWELv0 {
   fn neg(self) -> TLWELv0 {
     let mut res = TLWELv0::new();
     for (rref, sval) in res.p.iter_mut().zip(self.p.iter()) {
-      *rref = 0u32.wrapping_sub(*sval);
+      *rref = ZERO_TORUS.wrapping_sub(*sval);
     }
 
     res
@@ -112,13 +115,13 @@ pub trait AddMul<Rhs = Self> {
   /// The resulting type after applying the operation.
   type Output;
 
-  fn add_mul(self, rhs: Rhs, multiplier: u32) -> Self::Output;
+  fn add_mul(self, rhs: Rhs, multiplier: Torus) -> Self::Output;
 }
 
 impl AddMul for &TLWELv0 {
   type Output = TLWELv0;
 
-  fn add_mul(self, other: &TLWELv0, multiplier: u32) -> TLWELv0 {
+  fn add_mul(self, other: &TLWELv0, multiplier: Torus) -> TLWELv0 {
     let mut res = TLWELv0::new();
     for ((rref, &sval), &oval) in res.p.iter_mut().zip(self.p.iter()).zip(other.p.iter()) {
       *rref = sval.wrapping_add(oval.wrapping_mul(multiplier));
@@ -131,13 +134,13 @@ pub trait SubMul<Rhs = Self> {
   /// The resulting type after applying the operation.
   type Output;
 
-  fn sub_mul(self, rhs: Rhs, multiplier: u32) -> Self::Output;
+  fn sub_mul(self, rhs: Rhs, multiplier: Torus) -> Self::Output;
 }
 
 impl SubMul for &TLWELv0 {
   type Output = TLWELv0;
 
-  fn sub_mul(self, other: &TLWELv0, multiplier: u32) -> TLWELv0 {
+  fn sub_mul(self, other: &TLWELv0, multiplier: Torus) -> TLWELv0 {
     let mut res = TLWELv0::new();
     for ((rref, &sval), &oval) in res.p.iter_mut().zip(self.p.iter()).zip(other.p.iter()) {
       *rref = sval.wrapping_sub(oval.wrapping_mul(multiplier));
@@ -147,7 +150,7 @@ impl SubMul for &TLWELv0 {
 }
 
 pub struct TLWELv1 {
-  pub p: [u32; params::tlwe_lv1::N + 1],
+  pub p: [Torus; params::tlwe_lv1::N + 1],
 }
 
 impl TLWELv1 {
@@ -157,19 +160,21 @@ impl TLWELv1 {
     }
   }
 
-  pub fn b_mut(&mut self) -> &mut u32 {
+  pub fn b_mut(&mut self) -> &mut Torus {
     &mut self.p[params::tlwe_lv1::N]
   }
 
   #[cfg(test)]
   pub fn encrypt_f64(p: f64, alpha: f64, key: &key::SecretKeyLv1) -> TLWELv1 {
+    use crate::params::Torus;
+
     let mut rng = rand::thread_rng();
     let mut tlwe = TLWELv1::new();
-    let mut inner_product: u32 = 0;
+    let mut inner_product: Torus = 0;
     for i in 0..key.len() {
-      let rand_u32: u32 = rng.gen();
-      inner_product = inner_product.wrapping_add(key[i] * rand_u32);
-      tlwe.p[i] = rand_u32;
+      let rand_torus: Torus = rng.gen();
+      inner_product = inner_product.wrapping_add(key[i] * rand_torus);
+      tlwe.p[i] = rand_torus;
     }
     let normal_distr = rand_distr::Normal::new(0.0, alpha).unwrap();
     let mut rng = rand::thread_rng();
@@ -186,12 +191,12 @@ impl TLWELv1 {
 
   #[cfg(test)]
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv1) -> bool {
-    let mut inner_product: u32 = 0;
+    let mut inner_product: Torus = 0;
     for i in 0..key.len() {
       inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
     }
 
-    let res_torus = (self.p[key.len()].wrapping_sub(inner_product)) as i32;
+    let res_torus = (self.p[key.len()].wrapping_sub(inner_product)) as HalfTorus;
     res_torus >= 0
   }
 }

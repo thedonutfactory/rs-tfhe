@@ -1,6 +1,8 @@
 use crate::fft::{FFTPlan, FFTProcessor, FFT_PLAN};
 use crate::key;
 use crate::params;
+use crate::params::Torus;
+use crate::params::TORUS_SIZE;
 use crate::tlwe;
 use crate::trlwe;
 use crate::utils;
@@ -18,7 +20,7 @@ impl TRGSWLv1 {
     }
   }
 
-  pub fn encrypt_torus(p: u32, alpha: f64, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Self {
+  pub fn encrypt_torus(p: Torus, alpha: f64, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Self {
     let mut p_f64: Vec<f64> = Vec::new();
     const L: usize = params::trgsw_lv1::L;
     for i in 0..L {
@@ -88,7 +90,7 @@ pub fn external_product_with_fft(
   // 2. Potential SIMD vectorization across batch
   // 3. Reduced function call overhead
   // 4. Foundation for GPU batch FFT in future
-  let dec_ffts = plan.processor.batch_ifft_1024(&dec);
+  let dec_ffts = plan.processor.batch_ifft::<1024>(&dec);
 
   // Accumulate in frequency domain (point-wise MAC)
   // All operations stay in frequency domain - no intermediate transforms
@@ -102,8 +104,8 @@ pub fn external_product_with_fft(
   // vs Previous: 6 individual IFFTs + 2 individual FFTs = 8 FFT ops
   // Same count but batching improves cache behavior and enables future optimizations
   trlwe::TRLWELv1 {
-    a: plan.processor.fft_1024(&out_a_fft),
-    b: plan.processor.fft_1024(&out_b_fft),
+    a: plan.processor.fft::<1024>(&out_a_fft),
+    b: plan.processor.fft::<1024>(&out_b_fft),
   }
 }
 
@@ -136,13 +138,13 @@ fn fma_in_fd_1024(res: &mut [f64; 1024], a: &[f64; 1024], b: &[f64; 1024]) {
 pub fn decomposition(
   trlwe: &trlwe::TRLWELv1,
   cloud_key: &key::CloudKey,
-) -> [[u32; params::trgsw_lv1::N]; params::trgsw_lv1::L * 2] {
-  let mut res = [[0u32; params::trgsw_lv1::N]; params::trgsw_lv1::L * 2];
+) -> [[Torus; params::trgsw_lv1::N]; params::trgsw_lv1::L * 2] {
+  let mut res = [[0; params::trgsw_lv1::N]; params::trgsw_lv1::L * 2];
 
   let offset = cloud_key.decomposition_offset;
-  const BGBIT: u32 = params::trgsw_lv1::BGBIT;
-  const MASK: u32 = (1 << params::trgsw_lv1::BGBIT) - 1;
-  const HALF_BG: u32 = 1 << (params::trgsw_lv1::BGBIT - 1);
+  const BGBIT: Torus = params::trgsw_lv1::BGBIT;
+  const MASK: Torus = (1 << params::trgsw_lv1::BGBIT) - 1;
+  const HALF_BG: Torus = 1 << (params::trgsw_lv1::BGBIT - 1);
 
   // Serial version - parallelization overhead is too high for this workload
   // LLVM can auto-vectorize the inner loops more effectively
@@ -150,11 +152,11 @@ pub fn decomposition(
     let tmp0 = trlwe.a[j].wrapping_add(offset);
     let tmp1 = trlwe.b[j].wrapping_add(offset);
     for i in 0..params::trgsw_lv1::L {
-      res[i][j] = ((tmp0 >> (32 - ((i as u32) + 1) * BGBIT)) & MASK).wrapping_sub(HALF_BG);
+      res[i][j] = ((tmp0 >> (32 - ((i as Torus) + 1) * BGBIT)) & MASK).wrapping_sub(HALF_BG);
     }
     for i in 0..params::trgsw_lv1::L {
       res[i + params::trgsw_lv1::L][j] =
-        ((tmp1 >> (32 - ((i as u32) + 1) * BGBIT)) & MASK).wrapping_sub(HALF_BG);
+        ((tmp1 >> (32 - ((i as Torus) + 1) * BGBIT)) & MASK).wrapping_sub(HALF_BG);
     }
   }
 
@@ -190,15 +192,16 @@ pub fn blind_rotate(src: &tlwe::TLWELv0, cloud_key: &key::CloudKey) -> trlwe::TR
   FFT_PLAN.with(|plan| {
     const N: usize = params::trgsw_lv1::N;
     const NBIT: usize = params::trgsw_lv1::NBIT;
-    let b_tilda = 2 * N - (((src.b() as usize) + (1 << (31 - NBIT - 1))) >> (32 - NBIT - 1));
+    let b_tilda = 2 * N
+      - (((src.b() as usize) + (1 << (TORUS_SIZE - 1 - NBIT - 1))) >> (TORUS_SIZE - NBIT - 1));
     let mut res = trlwe::TRLWELv1 {
       a: poly_mul_with_x_k(&cloud_key.blind_rotate_testvec.a, b_tilda),
       b: poly_mul_with_x_k(&cloud_key.blind_rotate_testvec.b, b_tilda),
     };
 
     for i in 0..params::tlwe_lv0::N {
-      let a_tilda =
-        ((src.p[i as usize].wrapping_add(1 << (31 - NBIT - 1))) >> (32 - NBIT - 1)) as usize;
+      let a_tilda = ((src.p[i as usize].wrapping_add(1 << (TORUS_SIZE - 1 - NBIT - 1)))
+        >> (TORUS_SIZE - NBIT - 1)) as usize;
       let res2 = trlwe::TRLWELv1 {
         a: poly_mul_with_x_k(&res.a, a_tilda),
         b: poly_mul_with_x_k(&res.b, a_tilda),
@@ -242,21 +245,24 @@ pub fn batch_blind_rotate(
     .collect()
 }
 
-pub fn poly_mul_with_x_k(a: &[u32; params::trgsw_lv1::N], k: usize) -> [u32; params::trgsw_lv1::N] {
+pub fn poly_mul_with_x_k(
+  a: &[Torus; params::trgsw_lv1::N],
+  k: usize,
+) -> [Torus; params::trgsw_lv1::N] {
   const N: usize = params::trgsw_lv1::N;
 
-  let mut res: [u32; params::trgsw_lv1::N] = [0; params::trgsw_lv1::N];
+  let mut res: [Torus; params::trgsw_lv1::N] = [0; params::trgsw_lv1::N];
 
   if k < N {
     for i in 0..(N - k) {
       res[i + k] = a[i];
     }
     for i in (N - k)..N {
-      res[i + k - N] = u32::MAX - a[i];
+      res[i + k - N] = TORUS_SIZE as Torus - a[i];
     }
   } else {
     for i in 0..2 * N - k {
-      res[i + k - N] = u32::MAX - a[i];
+      res[i + k - N] = TORUS_SIZE as Torus - a[i];
     }
     for i in (2 * N - k)..N {
       res[i - (2 * N - k)] = a[i];
@@ -278,7 +284,7 @@ pub fn identity_key_switching(
 
   res.p[params::tlwe_lv0::N] = src.p[src.p.len() - 1];
 
-  const PREC_OFFSET: u32 = 1 << (32 - (1 + BASEBIT * IKS_T));
+  const PREC_OFFSET: Torus = 1 << (32 - (1 + BASEBIT * IKS_T));
 
   for i in 0..N {
     let a_bar = src.p[i].wrapping_add(PREC_OFFSET);
@@ -342,8 +348,8 @@ mod tests {
       let h_u32 = utils::f64_to_torus_vec(&h);
       let mut res = trlwe::TRLWELv1::new();
       for j in 0..N {
-        let mut tmp0: u32 = 0;
-        let mut tmp1: u32 = 0;
+        let mut tmp0: Torus = 0;
+        let mut tmp1: Torus = 0;
         for k in 0..params::trgsw_lv1::L {
           tmp0 = tmp0.wrapping_add(c_decomp[k][j].wrapping_mul(h_u32[k]));
           tmp1 = tmp1.wrapping_add(c_decomp[k + params::trgsw_lv1::L][j].wrapping_mul(h_u32[k]));
