@@ -116,34 +116,35 @@ pub fn gen_key_switching_key(secret_key: &SecretKey) -> KeySwitchingKey {
 }
 
 pub fn gen_bootstrapping_key(secret_key: &SecretKey) -> BootstrappingKey {
-  use rayon::prelude::*;
+  gen_bootstrapping_key_with_railgun(secret_key, crate::parallel::default_railgun())
+}
 
+pub fn gen_bootstrapping_key_with_railgun<R: crate::parallel::Railgun>(
+  secret_key: &SecretKey,
+  railgun: &R,
+) -> BootstrappingKey {
   // OPTIMIZATION: Parallel bootstrap key generation
   // The bootstrap key has 500-700 independent TRGSW encryptions (one per LWE coefficient)
   // Each encryption is completely independent and can be parallelized
   // Expected speedup: 4-8x on multi-core systems
   //
-  // Each Rayon worker thread uses its own thread-local FFT_PLAN for efficient caching
+  // Each worker thread uses its own thread-local FFT_PLAN for efficient caching
   //
-  // NOTE: Rayon threads need larger stack (8MB) due to deep call chains in TRGSW encryption
-  let pool = rayon::ThreadPoolBuilder::new()
-    .stack_size(8 * 1024 * 1024) // 8MB stack per thread
-    .build()
-    .unwrap();
+  // NOTE: Threads need larger stack (8MB) due to deep call chains in TRGSW encryption
+  let config = crate::parallel::ParallelConfig {
+    stack_size: Some(8 * 1024 * 1024), // 8MB stack per thread
+    num_threads: None,
+  };
 
-  pool.install(|| {
-    secret_key
-      .key_lv0
-      .par_iter()
-      .map(|&kval| {
-        FFT_PLAN.with(|plan| {
-          let p = &mut plan.borrow_mut();
-          trgsw::TRGSWLv1FFT::new(
-            &trgsw::TRGSWLv1::encrypt_torus(kval, params::BSK_ALPHA, &secret_key.key_lv1, p),
-            p,
-          )
-        })
+  railgun.with_config(config, || {
+    railgun.par_map(&secret_key.key_lv0, |&kval| {
+      FFT_PLAN.with(|plan| {
+        let p = &mut plan.borrow_mut();
+        trgsw::TRGSWLv1FFT::new(
+          &trgsw::TRGSWLv1::encrypt_torus(kval, params::BSK_ALPHA, &secret_key.key_lv1, p),
+          p,
+        )
       })
-      .collect()
+    })
   })
 }
