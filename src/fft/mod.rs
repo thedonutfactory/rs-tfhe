@@ -34,15 +34,15 @@ use crate::params::Torus;
 use std::cell::RefCell;
 
 // Platform-specific implementations
-#[cfg(target_arch = "x86_64")]
-mod spqlios;
+//#[cfg(target_arch = "x86_64")]
+// mod spqlios;
 
 // Re-export the appropriate implementation based on architecture and features
-#[cfg(target_arch = "x86_64")]
-pub type DefaultFFTProcessor = spqlios::SpqliosFFT;
+// #[cfg(target_arch = "x86_64")]
+// pub type DefaultFFTProcessor = spqlios::spqlios_fft::SpqliosFFT;
 
 pub mod klemsa;
-#[cfg(not(target_arch = "x86_64"))]
+// #[cfg(not(target_arch = "x86_64"))]
 pub type DefaultFFTProcessor = klemsa::KlemsaProcessor;
 
 pub struct FFTPlan {
