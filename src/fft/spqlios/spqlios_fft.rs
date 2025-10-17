@@ -13,7 +13,7 @@
 ///
 /// Only available on x86_64 architecture. Other platforms automatically
 /// use the portable RustFFTProcessor instead.
-use super::{FFTMode, FFTProcessor};
+use crate::fft::FFTProcessor;
 use std::os::raw::c_double;
 use std::os::raw::c_int;
 use std::os::raw::c_uint;
@@ -48,87 +48,39 @@ impl FFTProcessor for SpqliosFFT {
     }
   }
 
-  fn fft_mode(&self) -> FFTMode {
-    FFTMode::Negacyclic
-  }
-
-  fn ifft(&mut self, input: &[u32]) -> Vec<f64> {
-    let mut res: Vec<f64> = vec![0.0f64; self.n];
+  fn ifft<const N: usize>(&mut self, input: &[u32; N]) -> [f64; N] {
+    let mut res: [f64; N] = [0.0f64; N];
     unsafe {
       Spqlios_ifft_lv1(self.raw, res.as_mut_ptr(), input.as_ptr());
     }
-    res
+    res.try_into().unwrap()
   }
 
-  fn fft(&mut self, input: &[f64]) -> Vec<u32> {
-    let mut res: Vec<u32> = vec![0u32; self.n];
+  fn fft<const N: usize>(&mut self, input: &[f64; N]) -> [u32; N] {
+    let mut res: [u32; N] = [0u32; N];
     unsafe {
       Spqlios_fft_lv1(self.raw, res.as_mut_ptr(), input.as_ptr());
     }
-    res
+    res.try_into().unwrap()
   }
 
-  fn ifft_1024(&mut self, input: &[u32; 1024]) -> [f64; 1024] {
-    let src_const_ptr = input.as_ptr() as *const _;
-    let mut res = Box::new([0.0f64; 1024]);
-    let res_mut_ptr = Box::into_raw(res) as *mut _;
+  fn poly_mul<const N: usize>(&mut self, a: &[u32; N], b: &[u32; N]) -> [u32; N] {
+    let mut res: [u32; N] = [0u32; N];
+    let res_mut_ptr = res.as_mut_ptr() as *mut _;
     unsafe {
-      Spqlios_ifft_lv1(self.raw, res_mut_ptr, src_const_ptr);
+      Spqlios_poly_mul_1024(self.raw, res_mut_ptr, a.as_ptr(), b.as_ptr());
     }
-    res = unsafe { Box::from_raw(res_mut_ptr as *mut [f64; 1024]) };
-    *res
+    res.try_into().unwrap()
   }
 
-  fn fft_1024(&mut self, input: &[f64; 1024]) -> [u32; 1024] {
-    let src_const_ptr = input.as_ptr() as *const _;
-    let mut res = Box::new([0u32; 1024]);
-    let res_mut_ptr = Box::into_raw(res) as *mut _;
-    unsafe {
-      Spqlios_fft_lv1(self.raw, res_mut_ptr, src_const_ptr);
-    }
-    res = unsafe { Box::from_raw(res_mut_ptr as *mut [u32; 1024]) };
-    *res
+  fn batch_ifft<const N: usize>(&mut self, inputs: &[[u32; N]]) -> Vec<[f64; N]> {
+    inputs.iter().map(|input| self.ifft::<N>(input)).collect()
   }
 
-  fn poly_mul_1024(&mut self, a: &[u32; 1024], b: &[u32; 1024]) -> [u32; 1024] {
-    let mut res = Box::new([0u32; 1024]);
-    let res_mut_ptr = Box::into_raw(res) as *mut _;
-    unsafe {
-      Spqlios_poly_mul_1024(
-        self.raw,
-        res_mut_ptr,
-        a.as_ptr() as *const _,
-        b.as_ptr() as *const _,
-      );
-    }
-    res = unsafe { Box::from_raw(res_mut_ptr as *mut [u32; 1024]) };
-    *res
-  }
-
-  fn poly_mul(&mut self, a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
-    // Use ifft_1024/fft_1024 if size matches, otherwise use Vec variants
-    if a.len() == 1024 && b.len() == 1024 {
-      let a_arr: [u32; 1024] = a.as_slice().try_into().unwrap();
-      let b_arr: [u32; 1024] = b.as_slice().try_into().unwrap();
-      self.poly_mul_1024(&a_arr, &b_arr).to_vec()
-    } else {
-      let a_ifft = self.ifft(a);
-      let b_ifft = self.ifft(b);
-      let mut mul = vec![0.0f64; a.len()];
-
-      let ns = a.len() / 2;
-      for i in 0..ns {
-        let aimbim = a_ifft[i + ns] * b_ifft[i + ns];
-        let arebim = a_ifft[i] * b_ifft[i + ns];
-        mul[i] = (a_ifft[i] * b_ifft[i] - aimbim) * 0.5;
-        mul[i + ns] = (a_ifft[i + ns] * b_ifft[i] + arebim) * 0.5;
-      }
-
-      self.fft(&mul)
-    }
+  fn batch_fft<const N: usize>(&mut self, inputs: &[[f64; N]]) -> Vec<[u32; N]> {
+    inputs.iter().map(|input| self.fft::<N>(input)).collect()
   }
 }
-
 impl Drop for SpqliosFFT {
   fn drop(&mut self) {
     unsafe {
