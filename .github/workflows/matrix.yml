@@ -1,0 +1,130 @@
+name: Matrix Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-matrix:
+    name: Test on ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            features: ""
+          - os: ubuntu-latest
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            features: "lut-bootstrap"
+          - os: ubuntu-latest
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            features: "lut-bootstrap,fft_avx"
+          
+          # macOS x86_64
+          - os: macos-latest
+            arch: x86_64
+            target: x86_64-apple-darwin
+            features: ""
+          - os: macos-latest
+            arch: x86_64
+            target: x86_64-apple-darwin
+            features: "lut-bootstrap"
+          
+          # macOS ARM64
+          - os: macos-latest
+            arch: aarch64
+            target: aarch64-apple-darwin
+            features: ""
+          - os: macos-latest
+            arch: aarch64
+            target: aarch64-apple-darwin
+            features: "lut-bootstrap"
+          
+          # Windows x86_64
+          - os: windows-latest
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            features: ""
+          - os: windows-latest
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            features: "lut-bootstrap"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build
+      run: cargo build --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
+
+    - name: Build (release)
+      run: cargo build --release --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
+
+    - name: Run tests
+      run: cargo test --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
+
+    - name: Run tests (release)
+      run: cargo test --release --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
+
+    - name: Test examples (if LUT features enabled)
+      if: contains(matrix.features, 'lut-bootstrap')
+      run: |
+        cargo run --example lut_bootstrapping --release --target ${{ matrix.target }} --features "${{ matrix.features }}"
+        cargo run --example lut_arithmetic_demo --release --target ${{ matrix.target }} --features "${{ matrix.features }}"
+
+  test-feature-combinations:
+    name: Test Feature Combinations
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features:
+          - ""
+          - "bootstrapping"
+          - "fft_fma"
+          - "bootstrapping,fft_fma"
+          - "lut-bootstrap"
+          - "lut-bootstrap,fft_fma"
+          - "lut-bootstrap,fft_avx"
+          - "bootstrapping,lut-bootstrap,fft_fma"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+
+    - name: Build with features
+      run: cargo build --verbose --features "${{ matrix.features }}"
+
+    - name: Test with features
+      run: cargo test --verbose --features "${{ matrix.features }}"
+
+    - name: Test examples with features
+      if: contains(matrix.features, 'lut-bootstrap')
+      run: |
+        cargo run --example lut_bootstrapping --release --features "${{ matrix.features }}"
+        cargo run --example lut_arithmetic_demo --release --features "${{ matrix.features }}"

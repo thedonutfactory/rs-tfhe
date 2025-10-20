@@ -1,0 +1,79 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run benchmarks daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Run benchmarks
+      run: cargo bench --features "lut-bootstrap"
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: target/criterion/
+
+  benchmark-comparison:
+    name: Benchmark Comparison
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+
+    - name: Run benchmark comparison
+      run: |
+        # Run benchmarks on main branch
+        git checkout main
+        cargo bench --features "lut-bootstrap" -- --save-baseline main
+        
+        # Run benchmarks on PR branch
+        git checkout ${{ github.head_ref }}
+        cargo bench --features "lut-bootstrap" -- --baseline main
+
+    - name: Comment benchmark results
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Look for benchmark results in target/criterion
+          const criterionDir = 'target/criterion';
+          if (fs.existsSync(criterionDir)) {
+            console.log('Benchmark results found');
+            // In a real implementation, you would parse the results
+            // and post them as a comment to the PR
+          }
