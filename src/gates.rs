@@ -2,7 +2,6 @@ use crate::bootstrap::Bootstrap;
 use crate::key::CloudKey;
 use crate::params;
 use crate::tlwe::{AddMul, SubMul};
-use crate::trgsw::batch_blind_rotate;
 use crate::utils;
 use crate::utils::Ciphertext;
 
@@ -351,9 +350,17 @@ pub fn constant(value: bool) -> Ciphertext {
 /// Expected speedup: ~6-7x on multi-core systems (better than naive parallel gates!)
 #[cfg(feature = "bootstrapping")]
 pub fn batch_nand(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_nand_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_nand_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   // Step 1: Prepare all inputs for bootstrapping (fast, linear operations)
   let prepared: Vec<_> = inputs
@@ -366,25 +373,30 @@ pub fn batch_nand(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> 
     .collect();
 
   // Step 2: Batch blind rotate (slow, THIS is the bottleneck - parallelize here!)
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
   // Step 3: Post-process (sample extract + key switching, parallel)
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 /// Batch AND operation - process multiple gates in parallel
 /// Uses batch_blind_rotate internally for optimal performance
 #[cfg(feature = "bootstrapping")]
 pub fn batch_and(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_and_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_and_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   // Step 1: Prepare inputs (linear operations)
   let prepared: Vec<_> = inputs
@@ -397,24 +409,29 @@ pub fn batch_and(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> V
     .collect();
 
   // Step 2: Batch blind rotate (bottleneck, parallelized)
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
   // Step 3: Post-process
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 /// Batch OR operation - optimized with batch_blind_rotate
 #[cfg(feature = "bootstrapping")]
 pub fn batch_or(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_or_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_or_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   let prepared: Vec<_> = inputs
     .iter()
@@ -425,23 +442,28 @@ pub fn batch_or(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Ve
     })
     .collect();
 
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 /// Batch XOR operation - optimized with batch_blind_rotate
 #[cfg(feature = "bootstrapping")]
 pub fn batch_xor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_xor_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_xor_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   let prepared: Vec<_> = inputs
     .iter()
@@ -452,23 +474,28 @@ pub fn batch_xor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> V
     })
     .collect();
 
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 /// Batch NOR operation - optimized with batch_blind_rotate
 #[cfg(feature = "bootstrapping")]
 pub fn batch_nor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_nor_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_nor_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   let prepared: Vec<_> = inputs
     .iter()
@@ -479,23 +506,28 @@ pub fn batch_nor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> V
     })
     .collect();
 
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 /// Batch XNOR operation - optimized with batch_blind_rotate
 #[cfg(feature = "bootstrapping")]
 pub fn batch_xnor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> Vec<Ciphertext> {
+  batch_xnor_with_railgun(inputs, cloud_key, crate::parallel::default_railgun())
+}
+
+#[cfg(feature = "bootstrapping")]
+pub fn batch_xnor_with_railgun<R: crate::parallel::Railgun>(
+  inputs: &[(Ciphertext, Ciphertext)],
+  cloud_key: &CloudKey,
+  railgun: &R,
+) -> Vec<Ciphertext> {
   use crate::trgsw::identity_key_switching;
   use crate::trlwe::sample_extract_index;
-  use rayon::prelude::*;
 
   let prepared: Vec<_> = inputs
     .iter()
@@ -506,15 +538,12 @@ pub fn batch_xnor(inputs: &[(Ciphertext, Ciphertext)], cloud_key: &CloudKey) -> 
     })
     .collect();
 
-  let trlwes = batch_blind_rotate(&prepared, cloud_key);
+  let trlwes = crate::trgsw::batch_blind_rotate_with_railgun(&prepared, cloud_key, railgun);
 
-  trlwes
-    .par_iter()
-    .map(|trlwe| {
-      let tlwe_lv1 = sample_extract_index(trlwe, 0);
-      identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
-    })
-    .collect()
+  railgun.par_map(&trlwes, |trlwe| {
+    let tlwe_lv1 = sample_extract_index(trlwe, 0);
+    identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key)
+  })
 }
 
 #[cfg(test)]

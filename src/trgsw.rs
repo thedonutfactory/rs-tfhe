@@ -235,14 +235,18 @@ pub fn batch_blind_rotate(
   srcs: &[tlwe::TLWELv0],
   cloud_key: &key::CloudKey,
 ) -> Vec<trlwe::TRLWELv1> {
-  use rayon::prelude::*;
+  batch_blind_rotate_with_railgun(srcs, cloud_key, crate::parallel::default_railgun())
+}
 
+/// Batch blind rotate with custom parallelization backend
+pub fn batch_blind_rotate_with_railgun<R: crate::parallel::Railgun>(
+  srcs: &[tlwe::TLWELv0],
+  cloud_key: &key::CloudKey,
+  railgun: &R,
+) -> Vec<trlwe::TRLWELv1> {
   // Process each blind_rotate in parallel
   // Each operation is independent and uses thread-local FFT_PLAN
-  srcs
-    .par_iter()
-    .map(|src| blind_rotate(src, cloud_key))
-    .collect()
+  railgun.par_map(srcs, |src| blind_rotate(src, cloud_key))
 }
 
 pub fn poly_mul_with_x_k(
