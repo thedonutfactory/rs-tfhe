@@ -60,6 +60,64 @@ impl TLWELv0 {
     let res_torus = (self.p[params::tlwe_lv0::N].wrapping_sub(inner_product)) as HalfTorus;
     res_torus >= 0
   }
+
+  /// Encrypt a message using LWE message encoding for programmable bootstrapping
+  ///
+  /// This function encodes a message as `message * scale` where scale is `1/(2*message_modulus)`.
+  /// This is the standard encoding used in programmable bootstrapping.
+  ///
+  /// # Arguments
+  /// * `message` - Integer message to encrypt (should be in [0, message_modulus))
+  /// * `message_modulus` - Size of the message space
+  /// * `alpha` - Noise parameter
+  /// * `key` - Secret key for encryption
+  ///
+  /// # Returns
+  /// Encrypted TLWE ciphertext
+  #[cfg(feature = "lut-bootstrap")]
+  pub fn encrypt_lwe_message(
+    message: usize,
+    message_modulus: usize,
+    alpha: f64,
+    key: &key::SecretKeyLv0,
+  ) -> TLWELv0 {
+    // Normalize message to [0, message_modulus)
+    let message = message % message_modulus;
+
+    // Encode as message * scale where scale = 1/(2*message_modulus)
+    let scale = 1.0 / (2.0 * message_modulus as f64);
+    let encoded_value = message as f64 * scale;
+
+    Self::encrypt_f64(encoded_value, alpha, key)
+  }
+
+  /// Decrypt a message using LWE message decoding for programmable bootstrapping
+  ///
+  /// This function decodes a message from the LWE message encoding used in programmable bootstrapping.
+  ///
+  /// # Arguments
+  /// * `message_modulus` - Size of the message space
+  /// * `key` - Secret key for decryption
+  ///
+  /// # Returns
+  /// Decrypted integer message
+  #[cfg(feature = "lut-bootstrap")]
+  pub fn decrypt_lwe_message(&self, message_modulus: usize, key: &key::SecretKeyLv0) -> usize {
+    let mut inner_product: Torus = 0;
+    for i in 0..key.len() {
+      inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
+    }
+
+    let res_torus = self.p[params::tlwe_lv0::N].wrapping_sub(inner_product);
+    let res_f64 = crate::utils::torus_to_f64(res_torus);
+
+    // Decode from message * scale where scale = 1/(2*message_modulus)
+    let scale = 1.0 / (2.0 * message_modulus as f64);
+    let message = (res_f64 / scale + 0.5) as usize;
+
+    // Normalize to [0, message_modulus)
+    message % message_modulus
+  }
 }
 
 impl Add for &TLWELv0 {

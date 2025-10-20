@@ -1,5 +1,8 @@
 pub mod vanilla;
 
+#[cfg(feature = "lut-bootstrap")]
+pub mod lut;
+
 use crate::key::CloudKey;
 use crate::utils::Ciphertext;
 
