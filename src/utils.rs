@@ -11,6 +11,10 @@ pub fn f64_to_torus(d: f64) -> Torus {
   (torus as IntTorus) as Torus
 }
 
+pub fn torus_to_f64(t: Torus) -> f64 {
+  (t as f64) / (2u64.pow(TORUS_SIZE as u32) as f64)
+}
+
 pub fn f64_to_torus_vec(d: &Vec<f64>) -> Vec<Torus> {
   return d.iter().map(|&e| f64_to_torus(e)).collect();
 }

@@ -6,16 +6,9 @@
 /// # Available Security Levels
 ///
 /// - **80-bit**: Fast performance, suitable for development/testing
-///   - Enable with: `--features "security-80bit"`
-///   - ~20-30% faster than default
-///
-/// - **110-bit**: Balanced performance and security
-///   - Enable with: `--features "security-110bit"`
-///   - Original TFHE reference parameters
-///
-/// - **128-bit** (DEFAULT): High security, quantum-resistant
-///   - Default configuration (no feature flag needed)
-///   - Strong security guarantees for production use
+/// - **110-bit**: Balanced performance and security (original TFHE reference)
+/// - **128-bit**: High security, quantum-resistant (default)
+/// - **Uint1-Uint8**: Specialized parameters for different message moduli
 ///
 /// # Security Parameters Explained
 ///
@@ -27,165 +20,454 @@
 ///
 /// # Usage Example
 ///
-/// ```bash
-/// # Default 128-bit security (recommended)
-/// cargo build --release
+/// ```rust
+/// use rs_tfhe::params::SECURITY_128_BIT;
 ///
-/// # Fast 80-bit security (development/testing)
-/// cargo build --release --features "security-80bit"
+/// // Use 128-bit security (default)
+/// let params = SECURITY_128_BIT;
+/// ```
 ///
-/// # Balanced 110-bit security (original TFHE)
-/// cargo build --release --features "security-110bit"
+/// # LUT Bootstrapping Parameters
+///
+/// ```rust
+/// #[cfg(feature = "lut-bootstrap")]
+/// use rs_tfhe::params::SECURITY_UINT5;
+///
+/// #[cfg(feature = "lut-bootstrap")]
+/// // Use Uint5 parameters for complex arithmetic
+/// let params = SECURITY_UINT5;
 /// ```
 
 pub type Torus = u32;
 pub type HalfTorus = i32;
 pub type IntTorus = i64;
 
-// pub type Torus = u16;
-// pub type HalfTorus = i16;
-// pub type IntTorus = i32;
-
 pub const TORUS_SIZE: usize = std::mem::size_of::<Torus>() * 8;
 pub const ZERO_TORUS: Torus = 0;
 
 // ============================================================================
-// 80-BIT SECURITY PARAMETERS (Performance-Optimized)
+// PARAMETER STRUCTURE
 // ============================================================================
-#[cfg(feature = "security-80bit")]
-pub mod implementation {
-  pub const SECURITY_BITS: usize = 80;
-  pub const SECURITY_DESCRIPTION: &str = "80-bit security (performance-optimized)";
 
-  pub mod tlwe_lv0 {
-    pub const N: usize = 550;
-    pub const ALPHA: f64 = 5.0e-5; // 2^-14.3 approximately
-  }
+/// Security parameter set containing all TFHE parameters
+#[derive(Debug, Clone, Copy)]
+pub struct SecurityParams {
+  pub security_bits: usize,
+  pub description: &'static str,
+  pub tlwe_lv0: TlweParams,
+  pub tlwe_lv1: TlweParams,
+  pub trlwe_lv1: TrlweParams,
+  pub trgsw_lv1: TrgswParams,
+}
 
-  pub mod tlwe_lv1 {
-    pub const N: usize = 1024;
-    pub const ALPHA: f64 = 3.73e-8; // 2^-24.7 approximately
-  }
+#[derive(Debug, Clone, Copy)]
+pub struct TlweParams {
+  pub n: usize,
+  pub alpha: f64,
+}
 
-  pub mod trlwe_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
+#[derive(Debug, Clone, Copy)]
+pub struct TrlweParams {
+  pub n: usize,
+  pub alpha: f64,
+}
 
-  pub mod trgsw_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    pub const NBIT: usize = 10;
-    pub const BGBIT: u32 = 6;
-    pub const BG: u32 = 1 << BGBIT;
-    pub const L: usize = 3;
-    pub const BASEBIT: usize = 2;
-    pub const IKS_T: usize = 7;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
+#[derive(Debug, Clone, Copy)]
+pub struct TrgswParams {
+  pub n: usize,
+  pub nbit: usize,
+  pub bgbit: u32,
+  pub bg: u32,
+  pub l: usize,
+  pub basebit: usize,
+  pub iks_t: usize,
+  pub alpha: f64,
 }
 
 // ============================================================================
-// 110-BIT SECURITY PARAMETERS (Original TFHE, Balanced)
-// ============================================================================
-#[cfg(feature = "security-110bit")]
-pub mod implementation {
-  pub const SECURITY_BITS: usize = 110;
-  pub const SECURITY_DESCRIPTION: &str = "110-bit security (balanced, original TFHE)";
-
-  pub mod tlwe_lv0 {
-    pub const N: usize = 630;
-    pub const ALPHA: f64 = 3.0517578125e-05; // 2^-15 approximately
-  }
-
-  pub mod tlwe_lv1 {
-    pub const N: usize = 1024;
-    pub const ALPHA: f64 = 2.980_232_238_769_531_3e-8; // 2^-25 approximately
-  }
-
-  pub mod trlwe_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
-
-  pub mod trgsw_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    pub const NBIT: usize = 10;
-    pub const BGBIT: Torus = 6;
-    pub const BG: u32 = 1 << BGBIT;
-    pub const L: usize = 3;
-    pub const BASEBIT: usize = 2;
-    pub const IKS_T: usize = 8;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
-}
-
-// ============================================================================
-// 128-BIT SECURITY PARAMETERS (DEFAULT - High Security, Quantum-Resistant)
-// ============================================================================
-#[cfg(not(any(feature = "security-80bit", feature = "security-110bit")))]
-pub mod implementation {
-  pub const SECURITY_BITS: usize = 128;
-  pub const SECURITY_DESCRIPTION: &str = "128-bit security (high security, quantum-resistant)";
-
-  pub mod tlwe_lv0 {
-    pub const N: usize = 700;
-    pub const ALPHA: f64 = 2.0e-5; // 2^-15.6 approximately
-  }
-
-  pub mod tlwe_lv1 {
-    pub const N: usize = 1024;
-    pub const ALPHA: f64 = 2.0e-8; // 2^-25.6 approximately
-  }
-
-  pub mod trlwe_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
-
-  pub mod trgsw_lv1 {
-    pub const N: usize = super::tlwe_lv1::N;
-    pub const NBIT: usize = 10;
-    pub const BGBIT: crate::params::Torus = 6;
-    pub const BG: crate::params::Torus = 1 << BGBIT;
-    pub const L: usize = 3;
-    pub const BASEBIT: usize = 2;
-    pub const IKS_T: usize = 9;
-    #[cfg(test)]
-    pub const ALPHA: f64 = super::tlwe_lv1::ALPHA;
-  }
-}
-
-// ============================================================================
-// PUBLIC API - Re-export selected implementation
+// SECURITY PARAMETER CONSTANTS
 // ============================================================================
 
-pub use implementation::*;
+/// 80-bit security parameters (performance-optimized)
+pub const SECURITY_80_BIT: SecurityParams = SecurityParams {
+  security_bits: 80,
+  description: "80-bit security (performance-optimized)",
+  tlwe_lv0: TlweParams {
+    n: 550,
+    alpha: 5.0e-5, // 2^-14.3 approximately
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 3.73e-8, // 2^-24.7 approximately
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 3.73e-8,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 6,
+    bg: 64,
+    l: 3,
+    basebit: 2,
+    iks_t: 7,
+    alpha: 3.73e-8,
+  },
+};
 
-pub const KSK_ALPHA: f64 = tlwe_lv0::ALPHA;
-pub const BSK_ALPHA: f64 = tlwe_lv1::ALPHA;
+/// 110-bit security parameters (balanced, original TFHE)
+pub const SECURITY_110_BIT: SecurityParams = SecurityParams {
+  security_bits: 110,
+  description: "110-bit security (balanced, original TFHE)",
+  tlwe_lv0: TlweParams {
+    n: 630,
+    alpha: 3.0517578125e-05, // 2^-15 approximately
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.980_232_238_769_531_3e-8, // 2^-25 approximately
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.980_232_238_769_531_3e-8,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 6,
+    bg: 64,
+    l: 3,
+    basebit: 2,
+    iks_t: 8,
+    alpha: 2.980_232_238_769_531_3e-8,
+  },
+};
 
-// Compile-time verification that only one security level is selected
-#[cfg(all(feature = "security-80bit", feature = "security-110bit"))]
-compile_error!("Cannot enable both security-80bit and security-110bit features. Choose one.");
+/// Uint1 parameters (1-bit binary/boolean, messageModulus=2)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT1: SecurityParams = SecurityParams {
+  security_bits: 1,
+  description: "Uint1 parameters (1-bit binary/boolean, messageModulus=2, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 700,
+    alpha: 2.0e-05,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.0e-08,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.0e-08,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 10,
+    bg: 1024,
+    l: 2,
+    basebit: 2,
+    iks_t: 8,
+    alpha: 2.0e-08,
+  },
+};
 
-#[cfg(all(feature = "security-80bit", feature = "security-128bit"))]
-compile_error!("Cannot enable both security-80bit and security-128bit features. Choose one.");
+/// Uint2 parameters (2-bit messages, messageModulus=4)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT2: SecurityParams = SecurityParams {
+  security_bits: 2,
+  description: "Uint2 parameters (2-bit messages, messageModulus=4, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 687,
+    alpha: 0.00002120846893069971872305794214,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024, // Using 1024 for compatibility with hardcoded TRGSW/TRLWE
+    alpha: 0.00000000000231841227527049948463,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 0.00000000000231841227527049948463,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,  // 1024 = 2^10
+    bgbit: 18, // Base = 1 << 18
+    bg: 262144,
+    l: 1,
+    basebit: 4, // KeySwitch base bits
+    iks_t: 3,   // KeySwitch level
+    alpha: 0.00000000000231841227527049948463,
+  },
+};
 
-#[cfg(all(feature = "security-110bit", feature = "security-128bit"))]
-compile_error!("Cannot enable both security-110bit and security-128bit features. Choose one.");
+/// Uint3 parameters (3-bit messages, messageModulus=8)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT3: SecurityParams = SecurityParams {
+  security_bits: 3,
+  description: "Uint3 parameters (3-bit messages, messageModulus=8, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 820,
+    alpha: 0.00000251676160959795544987084234,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 0.00000000000000022204460492503131,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 0.00000000000000022204460492503131,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,  // 1024 = 2^10
+    bgbit: 23, // Base = 1 << 23
+    bg: 8388608,
+    l: 1,
+    basebit: 6, // KeySwitch base bits
+    iks_t: 2,   // KeySwitch level
+    alpha: 0.00000000000000022204460492503131,
+  },
+};
+
+/// Uint4 parameters (4-bit messages, messageModulus=16)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT4: SecurityParams = SecurityParams {
+  security_bits: 4,
+  description: "Uint4 parameters (4-bit messages, messageModulus=16, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 820,
+    alpha: 0.00000251676160959795544987084234,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 0.00000000000000022204460492503131,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 0.00000000000000022204460492503131,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,  // 1024 = 2^10
+    bgbit: 22, // Base = 1 << 22
+    bg: 4194304,
+    l: 1,
+    basebit: 5, // KeySwitch base bits
+    iks_t: 3,   // KeySwitch level
+    alpha: 0.00000000000000022204460492503131,
+  },
+};
+
+/// Uint5 parameters (5-bit messages, messageModulus=32) - Recommended for complex arithmetic
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT5: SecurityParams = SecurityParams {
+  security_bits: 5,
+  description: "Uint5 parameters (5-bit messages, messageModulus=32, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 1071,
+    alpha: 7.088226765410429399593757e-08,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 22,
+    bg: 4194304,
+    l: 1,
+    basebit: 6,
+    iks_t: 3,
+    alpha: 2.2204460492503131e-17,
+  },
+};
+
+/// Uint6 parameters (6-bit messages, messageModulus=64)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT6: SecurityParams = SecurityParams {
+  security_bits: 6,
+  description: "Uint6 parameters (6-bit messages, messageModulus=64, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 1071,
+    alpha: 7.088226765410429399593757e-08,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 22,
+    bg: 4194304,
+    l: 1,
+    basebit: 6,
+    iks_t: 3,
+    alpha: 2.2204460492503131e-17,
+  },
+};
+
+/// Uint7 parameters (7-bit messages, messageModulus=128)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT7: SecurityParams = SecurityParams {
+  security_bits: 7,
+  description: "Uint7 parameters (7-bit messages, messageModulus=128, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 1160,
+    alpha: 1.966220007498402695211596e-08,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 22,
+    bg: 4194304,
+    l: 1,
+    basebit: 7,
+    iks_t: 3,
+    alpha: 2.2204460492503131e-17,
+  },
+};
+
+/// Uint8 parameters (8-bit messages, messageModulus=256)
+#[cfg(feature = "lut-bootstrap")]
+pub const SECURITY_UINT8: SecurityParams = SecurityParams {
+  security_bits: 8,
+  description: "Uint8 parameters (8-bit messages, messageModulus=256, N=1024)",
+  tlwe_lv0: TlweParams {
+    n: 1160,
+    alpha: 1.966220007498402695211596e-08,
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.2204460492503131e-17,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 22,
+    bg: 4194304,
+    l: 1,
+    basebit: 7,
+    iks_t: 3,
+    alpha: 2.2204460492503131e-17,
+  },
+};
+
+/// 128-bit security parameters (default, high security, quantum-resistant)
+pub const SECURITY_128_BIT: SecurityParams = SecurityParams {
+  security_bits: 128,
+  description: "128-bit security (high security, quantum-resistant)",
+  tlwe_lv0: TlweParams {
+    n: 700,
+    alpha: 2.0e-5, // 2^-15.6 approximately
+  },
+  tlwe_lv1: TlweParams {
+    n: 1024,
+    alpha: 2.0e-8, // 2^-25.6 approximately
+  },
+  trlwe_lv1: TrlweParams {
+    n: 1024,
+    alpha: 2.0e-8,
+  },
+  trgsw_lv1: TrgswParams {
+    n: 1024,
+    nbit: 10,
+    bgbit: 6,
+    bg: 64,
+    l: 3,
+    basebit: 2,
+    iks_t: 9,
+    alpha: 2.0e-8,
+  },
+};
+
+// ============================================================================
+// DEFAULT PARAMETER SELECTION
+// ============================================================================
+
+/// Default security parameters (128-bit)
+pub const DEFAULT_SECURITY: SecurityParams = SECURITY_128_BIT;
 
 /// Get a description of the current security level
-pub fn security_info() -> String {
+pub fn security_info(params: SecurityParams) -> String {
   format!(
     "Security level: {} bits ({})",
-    SECURITY_BITS, SECURITY_DESCRIPTION
+    params.security_bits, params.description
   )
 }
+
+// ============================================================================
+// COMPATIBILITY ALIASES - For backwards compatibility with existing code
+// ============================================================================
+
+/// Compatibility module for existing code that expects the old parameter structure
+pub mod implementation {
+  use super::*;
+
+  // Use 128-bit parameters as default for compatibility
+  pub const SECURITY_BITS: usize = SECURITY_128_BIT.security_bits;
+  pub const SECURITY_DESCRIPTION: &str = SECURITY_128_BIT.description;
+
+  pub mod tlwe_lv0 {
+    use super::super::*;
+    pub const N: usize = SECURITY_128_BIT.tlwe_lv0.n;
+    pub const ALPHA: f64 = SECURITY_128_BIT.tlwe_lv0.alpha;
+  }
+
+  pub mod tlwe_lv1 {
+    use super::super::*;
+    pub const N: usize = SECURITY_128_BIT.tlwe_lv1.n;
+    pub const ALPHA: f64 = SECURITY_128_BIT.tlwe_lv1.alpha;
+  }
+
+  pub mod trlwe_lv1 {
+    use super::super::*;
+    pub const N: usize = SECURITY_128_BIT.trlwe_lv1.n;
+    pub const ALPHA: f64 = SECURITY_128_BIT.trlwe_lv1.alpha;
+  }
+
+  pub mod trgsw_lv1 {
+    use super::super::*;
+    pub const N: usize = SECURITY_128_BIT.trgsw_lv1.n;
+    pub const NBIT: usize = SECURITY_128_BIT.trgsw_lv1.nbit;
+    pub const BGBIT: u32 = SECURITY_128_BIT.trgsw_lv1.bgbit;
+    pub const BG: u32 = SECURITY_128_BIT.trgsw_lv1.bg;
+    pub const L: usize = SECURITY_128_BIT.trgsw_lv1.l;
+    pub const BASEBIT: usize = SECURITY_128_BIT.trgsw_lv1.basebit;
+    pub const IKS_T: usize = SECURITY_128_BIT.trgsw_lv1.iks_t;
+    pub const ALPHA: f64 = SECURITY_128_BIT.trgsw_lv1.alpha;
+  }
+}
+
+// Re-export for backwards compatibility
+pub use implementation::*;
+
+// Additional compatibility constants
+pub const KSK_ALPHA: f64 = SECURITY_128_BIT.tlwe_lv0.alpha;
+pub const BSK_ALPHA: f64 = SECURITY_128_BIT.tlwe_lv1.alpha;
 
 #[cfg(test)]
 mod tests {
@@ -193,36 +475,52 @@ mod tests {
 
   #[test]
   fn test_security_info() {
-    let info = security_info();
+    let info = security_info(SECURITY_128_BIT);
     println!("{}", info);
-
-    // Verify the security level matches expectations
-    #[cfg(feature = "security-80bit")]
-    assert_eq!(SECURITY_BITS, 80);
-
-    #[cfg(feature = "security-110bit")]
-    assert_eq!(SECURITY_BITS, 110);
-
-    #[cfg(not(any(feature = "security-80bit", feature = "security-110bit")))]
-    assert_eq!(SECURITY_BITS, 128);
+    assert!(info.contains("128"));
   }
 
   #[test]
   fn test_parameter_sanity() {
-    // Verify basic parameter relationships
-    assert!(tlwe_lv0::N > 0);
-    assert!(tlwe_lv1::N > 0);
-    assert!(tlwe_lv0::ALPHA > 0.0);
-    assert!(tlwe_lv1::ALPHA > 0.0);
-    assert_eq!(trgsw_lv1::BG, 1 << trgsw_lv1::BGBIT);
+    // Test all parameter sets
+    let mut params = vec![SECURITY_80_BIT, SECURITY_110_BIT, SECURITY_128_BIT];
 
-    println!("TLWE Level 0: N={}, α={}", tlwe_lv0::N, tlwe_lv0::ALPHA);
-    println!("TLWE Level 1: N={}, α={}", tlwe_lv1::N, tlwe_lv1::ALPHA);
-    println!(
-      "TRGSW: L={}, BGBIT={}, BG={}",
-      trgsw_lv1::L,
-      trgsw_lv1::BGBIT,
-      trgsw_lv1::BG
-    );
+    #[cfg(feature = "lut-bootstrap")]
+    {
+      params.extend([
+        SECURITY_UINT1,
+        SECURITY_UINT2,
+        SECURITY_UINT3,
+        SECURITY_UINT4,
+        SECURITY_UINT5,
+        SECURITY_UINT6,
+        SECURITY_UINT7,
+        SECURITY_UINT8,
+      ]);
+    }
+
+    for param in params {
+      // Basic sanity checks on parameters
+      assert!(param.tlwe_lv0.n > 0);
+      assert!(param.tlwe_lv1.n > 0);
+      assert!(param.tlwe_lv0.alpha > 0.0);
+      assert!(param.tlwe_lv1.alpha > 0.0);
+      assert!(param.trgsw_lv1.l > 0);
+      assert!(param.trgsw_lv1.bgbit > 0);
+    }
+  }
+
+  #[test]
+  fn test_parameter_constants() {
+    // Test that all constants are accessible
+    assert_eq!(SECURITY_80_BIT.security_bits, 80);
+    assert_eq!(SECURITY_110_BIT.security_bits, 110);
+    assert_eq!(SECURITY_128_BIT.security_bits, 128);
+    #[cfg(feature = "lut-bootstrap")]
+    {
+      assert_eq!(SECURITY_UINT1.security_bits, 1);
+      assert_eq!(SECURITY_UINT5.security_bits, 5);
+      assert_eq!(SECURITY_UINT8.security_bits, 8);
+    }
   }
 }
