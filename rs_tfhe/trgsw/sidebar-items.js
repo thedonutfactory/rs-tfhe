@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["batch_blind_rotate","batch_blind_rotate_with_railgun","blind_rotate","blind_rotate_with_testvec","cmux","decomposition","external_product_with_fft","identity_key_switching","poly_mul_with_x_k"],"struct":["TRGSWLv1","TRGSWLv1FFT"]};

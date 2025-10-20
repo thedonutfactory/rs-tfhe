@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["sample_extract_index","sample_extract_index_2"],"struct":["TRLWELv1","TRLWELv1FFT"]};

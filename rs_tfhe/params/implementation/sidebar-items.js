@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["SECURITY_BITS","SECURITY_DESCRIPTION"],"mod":["tlwe_lv0","tlwe_lv1","trgsw_lv1","trlwe_lv1"]};

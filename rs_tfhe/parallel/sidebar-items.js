@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["default_railgun","rayon_railgun"],"mod":["rayon_impl"],"struct":["ParallelConfig"],"trait":["Railgun"]};

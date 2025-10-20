@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["f64_to_torus","f64_to_torus_vec","gaussian_f64","gaussian_torus","gussian_f64_vec","torus_to_f64"],"type":["Ciphertext"]};

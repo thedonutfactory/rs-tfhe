@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FFT_PLAN"],"mod":["klemsa"],"struct":["FFTPlan"],"trait":["FFTProcessor"],"type":["DefaultFFTProcessor"]};

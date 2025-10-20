@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["convert","to_bits"],"trait":["AsBits"]};

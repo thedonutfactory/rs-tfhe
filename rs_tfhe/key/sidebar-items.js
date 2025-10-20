@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["gen_bootstrapping_key","gen_bootstrapping_key_with_railgun","gen_decomposition_offset","gen_key_switching_key","gen_testvec"],"struct":["CloudKey","SecretKey"],"type":["BootstrappingKey","KeySwitchingKey","SecretKeyLv0","SecretKeyLv1"]};
