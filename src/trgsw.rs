@@ -315,11 +315,11 @@ pub fn poly_mul_with_x_k(
   if k < N {
     res[k..((N - k) + k)].copy_from_slice(&a[..(N - k)]);
     for i in (N - k)..N {
-      res[i + k - N] = TORUS_SIZE as Torus - a[i];
+      res[i + k - N] = Torus::MAX - a[i];
     }
   } else {
     for i in 0..2 * N - k {
-      res[i + k - N] = TORUS_SIZE as Torus - a[i];
+      res[i + k - N] = Torus::MAX - a[i];
     }
     for i in (2 * N - k)..N {
       res[i - (2 * N - k)] = a[i];

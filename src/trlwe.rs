@@ -2,7 +2,6 @@ use crate::fft::{FFTPlan, FFTProcessor};
 use crate::key;
 use crate::params;
 use crate::params::Torus;
-use crate::params::TORUS_SIZE;
 use crate::tlwe;
 use crate::utils;
 use rand::Rng;
@@ -112,7 +111,7 @@ pub fn sample_extract_index(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv1 {
     if i <= k {
       res.p[i] = trlwe.a[k - i];
     } else {
-      res.p[i] = TORUS_SIZE as Torus - trlwe.a[N + k - i];
+      res.p[i] = Torus::MAX - trlwe.a[N + k - i];
     }
   }
   *res.b_mut() = trlwe.b[k];
@@ -128,7 +127,7 @@ pub fn sample_extract_index_2(trlwe: &TRLWELv1, k: usize) -> tlwe::TLWELv0 {
     if i <= k {
       res.p[i] = trlwe.a[k - i];
     } else {
-      res.p[i] = TORUS_SIZE as Torus - trlwe.a[N + k - i];
+      res.p[i] = Torus::MAX - trlwe.a[N + k - i];
     }
   }
   *res.b_mut() = trlwe.b[k];

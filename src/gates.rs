@@ -652,36 +652,6 @@ mod tests {
     );
   }
 
-  fn test_gate<
-    E: Fn(bool, bool) -> bool,
-    C: Fn(&Gates, &Ciphertext, &Ciphertext, &CloudKey) -> Ciphertext,
-  >(
-    expect: E,
-    actual: C,
-  ) {
-    let mut rng = rand::thread_rng();
-    let key = key::SecretKey::new();
-    let cloud_key = key::CloudKey::new(&key);
-    let gates = Gates::new();
-
-    let try_num = 10;
-    for _i in 0..try_num {
-      let plain_a = rng.gen::<bool>();
-      let plain_b = rng.gen::<bool>();
-      let expected = expect(plain_a, plain_b);
-
-      let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_b = Ciphertext::encrypt_bool(plain_b, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_op = actual(&gates, &tlwe_a, &tlwe_b, &cloud_key);
-      let dec = tlwe_op.decrypt_bool(&key.key_lv0);
-      dbg!(plain_a);
-      dbg!(plain_b);
-      dbg!(expected);
-      dbg!(dec);
-      assert_eq!(expected, dec);
-    }
-  }
-
   #[test]
   fn test_mux() {
     let mut rng = rand::thread_rng();
@@ -832,5 +802,58 @@ mod tests {
     let dec = tlwe_and.decrypt_bool(&key.key_lv0);
 
     assert_eq!(expected, dec);
+  }
+
+  #[test]
+  fn test_all_and_cases() {
+    let key = key::SecretKey::new();
+    let cloud_key = key::CloudKey::new(&key);
+    let gates = Gates::new();
+
+    let test_cases = vec![
+      (true, true, true),
+      (true, false, false),
+      (false, true, false),
+      (false, false, false),
+    ];
+
+    for (a, b, expected) in test_cases {
+      let ct_a = Ciphertext::encrypt_bool(a, params::tlwe_lv0::ALPHA, &key.key_lv0);
+      let ct_b = Ciphertext::encrypt_bool(b, params::tlwe_lv0::ALPHA, &key.key_lv0);
+
+      let result = gates.and(&ct_a, &ct_b, &cloud_key);
+      let decrypted = result.decrypt_bool(&key.key_lv0);
+
+      println!("{} AND {} = {} (expected: {})", a, b, decrypted, expected);
+      assert_eq!(decrypted, expected, "Failed for {} AND {}", a, b);
+    }
+  }
+
+  fn test_gate<
+    E: Fn(bool, bool) -> bool,
+    C: Fn(&Gates, &Ciphertext, &Ciphertext, &CloudKey) -> Ciphertext,
+  >(
+    expect: E,
+    actual: C,
+  ) {
+    let key = key::SecretKey::new();
+    let cloud_key = key::CloudKey::new(&key);
+    let gates = Gates::new();
+
+    let test_cases = vec![(true, true), (true, false), (false, true), (false, false)];
+
+    for (a, b) in test_cases {
+      let ct_a = Ciphertext::encrypt_bool(a, params::tlwe_lv0::ALPHA, &key.key_lv0);
+      let ct_b = Ciphertext::encrypt_bool(b, params::tlwe_lv0::ALPHA, &key.key_lv0);
+
+      let result = actual(&gates, &ct_a, &ct_b, &cloud_key);
+      let expected_result = expect(a, b);
+      let decrypted = result.decrypt_bool(&key.key_lv0);
+      assert_eq!(
+        decrypted, expected_result,
+        "Failed for {} {} (expected: {})",
+        a, b, expected_result
+      );
+    }
   }
 }
