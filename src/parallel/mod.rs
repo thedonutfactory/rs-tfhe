@@ -93,7 +93,7 @@ pub trait Railgun: Clone + Send + Sync {
 static DEFAULT_RAILGUN: OnceLock<RayonRailgun> = OnceLock::new();
 
 pub fn default_railgun() -> &'static RayonRailgun {
-  DEFAULT_RAILGUN.get_or_init(|| RayonRailgun::default())
+  DEFAULT_RAILGUN.get_or_init(RayonRailgun::default)
 }
 
 /// Create a custom Rayon-based parallelization backend

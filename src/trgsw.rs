@@ -13,6 +13,12 @@ pub struct TRGSWLv1 {
   trlwe: [trlwe::TRLWELv1; params::trgsw_lv1::L * 2],
 }
 
+impl Default for TRGSWLv1 {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl TRGSWLv1 {
   pub fn new() -> TRGSWLv1 {
     TRGSWLv1 {
@@ -24,7 +30,7 @@ impl TRGSWLv1 {
     let mut p_f64: Vec<f64> = Vec::new();
     const L: usize = params::trgsw_lv1::L;
     for i in 0..L {
-      p_f64.push((params::trgsw_lv1::BG as f64).powf(((1 + i) as f64) * -1.0));
+      p_f64.push((params::trgsw_lv1::BG as f64).powf(-((1 + i) as f64)));
     }
     let p_torus = utils::f64_to_torus_vec(&p_f64);
     let plain_zero: Vec<f64> = vec![0.0f64; params::trgsw_lv1::N];
@@ -35,9 +41,9 @@ impl TRGSWLv1 {
       .iter_mut()
       .for_each(|e| *e = trlwe::TRLWELv1::encrypt_f64(&plain_zero, alpha, key, plan));
 
-    for i in 0..L {
-      trgsw.trlwe[i].a[0] = trgsw.trlwe[i].a[0].wrapping_add(p * p_torus[i]);
-      trgsw.trlwe[i + L].b[0] = trgsw.trlwe[i + L].b[0].wrapping_add(p * p_torus[i]);
+    for (i, p_torus) in p_torus.iter().enumerate() {
+      trgsw.trlwe[i].a[0] = trgsw.trlwe[i].a[0].wrapping_add(p * p_torus);
+      trgsw.trlwe[i + L].b[0] = trgsw.trlwe[i + L].b[0].wrapping_add(p * p_torus);
     }
     trgsw
   }
@@ -50,7 +56,7 @@ pub struct TRGSWLv1FFT {
 
 impl TRGSWLv1FFT {
   pub fn new(trgsw: &TRGSWLv1, plan: &mut FFTPlan) -> TRGSWLv1FFT {
-    return TRGSWLv1FFT {
+    TRGSWLv1FFT {
       trlwe_fft: trgsw
         .trlwe
         .iter()
@@ -58,7 +64,7 @@ impl TRGSWLv1FFT {
         .collect::<Vec<trlwe::TRLWELv1FFT>>()
         .try_into()
         .unwrap(),
-    };
+    }
   }
 
   pub fn new_dummy() -> TRGSWLv1FFT {
@@ -94,9 +100,9 @@ pub fn external_product_with_fft(
 
   // Accumulate in frequency domain (point-wise MAC)
   // All operations stay in frequency domain - no intermediate transforms
-  for i in 0..L * 2 {
-    fma_in_fd_1024(&mut out_a_fft, &dec_ffts[i], &trgsw_fft.trlwe_fft[i].a);
-    fma_in_fd_1024(&mut out_b_fft, &dec_ffts[i], &trgsw_fft.trlwe_fft[i].b);
+  for (i, dec_fft) in dec_ffts.iter().enumerate().take(L * 2) {
+    fma_in_fd_1024(&mut out_a_fft, dec_fft, &trgsw_fft.trlwe_fft[i].a);
+    fma_in_fd_1024(&mut out_b_fft, dec_fft, &trgsw_fft.trlwe_fft[i].b);
   }
 
   // Single IFFT per output polynomial (a and b)
@@ -148,6 +154,7 @@ pub fn decomposition(
 
   // Serial version - parallelization overhead is too high for this workload
   // LLVM can auto-vectorize the inner loops more effectively
+  #[allow(clippy::needless_range_loop)]
   for j in 0..params::trgsw_lv1::N {
     let tmp0 = trlwe.a[j].wrapping_add(offset);
     let tmp1 = trlwe.b[j].wrapping_add(offset);
@@ -200,7 +207,7 @@ pub fn blind_rotate(src: &tlwe::TLWELv0, cloud_key: &key::CloudKey) -> trlwe::TR
     };
 
     for i in 0..params::tlwe_lv0::N {
-      let a_tilda = ((src.p[i as usize].wrapping_add(1 << (TORUS_SIZE - 1 - NBIT - 1)))
+      let a_tilda = ((src.p[i].wrapping_add(1 << (TORUS_SIZE - 1 - NBIT - 1)))
         >> (TORUS_SIZE - NBIT - 1)) as usize;
       let res2 = trlwe::TRLWELv1 {
         a: poly_mul_with_x_k(&res.a, a_tilda),
@@ -209,7 +216,7 @@ pub fn blind_rotate(src: &tlwe::TLWELv0, cloud_key: &key::CloudKey) -> trlwe::TR
       res = cmux(
         &res,
         &res2,
-        &cloud_key.bootstrapping_key[i as usize],
+        &cloud_key.bootstrapping_key[i],
         cloud_key,
         &mut plan.borrow_mut(),
       );
@@ -306,9 +313,7 @@ pub fn poly_mul_with_x_k(
   let mut res: [Torus; params::trgsw_lv1::N] = [0; params::trgsw_lv1::N];
 
   if k < N {
-    for i in 0..(N - k) {
-      res[i + k] = a[i];
-    }
+    res[k..((N - k) + k)].copy_from_slice(&a[..(N - k)]);
     for i in (N - k)..N {
       res[i + k - N] = TORUS_SIZE as Torus - a[i];
     }

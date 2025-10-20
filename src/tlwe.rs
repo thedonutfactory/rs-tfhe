@@ -13,6 +13,12 @@ pub struct TLWELv0 {
   pub p: [Torus; params::tlwe_lv0::N + 1],
 }
 
+impl Default for TLWELv0 {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl TLWELv0 {
   pub fn new() -> TLWELv0 {
     TLWELv0 {
@@ -33,10 +39,10 @@ impl TLWELv0 {
     let mut tlwe = TLWELv0::new();
     let mut inner_product: Torus = 0;
 
-    for i in 0..key.len() {
-      let rand_u32: Torus = rng.gen();
-      inner_product = inner_product.wrapping_add(key[i] * rand_u32);
-      tlwe.p[i] = rand_u32;
+    for (i, &key) in key.iter().enumerate() {
+      let rand_torus: Torus = rng.gen();
+      inner_product = inner_product.wrapping_add(key * rand_torus);
+      tlwe.p[i] = rand_torus;
     }
 
     let normal_distr = rand_distr::Normal::new(0.0, alpha).unwrap();
@@ -53,8 +59,8 @@ impl TLWELv0 {
 
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv0) -> bool {
     let mut inner_product: Torus = 0;
-    for i in 0..key.len() {
-      inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
+    for (i, &key) in key.iter().enumerate() {
+      inner_product = inner_product.wrapping_add(self.p[i] * key);
     }
 
     let res_torus = (self.p[params::tlwe_lv0::N].wrapping_sub(inner_product)) as HalfTorus;
@@ -209,6 +215,12 @@ impl SubMul for &TLWELv0 {
 
 pub struct TLWELv1 {
   pub p: [Torus; params::tlwe_lv1::N + 1],
+}
+
+impl Default for TLWELv1 {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl TLWELv1 {

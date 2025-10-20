@@ -166,20 +166,20 @@ impl Gates {
     *tlwe_and.b_mut() = tlwe_and.b().wrapping_add(utils::f64_to_torus(-0.125));
     let u1: &Ciphertext = &self
       .bootstrap
-      .bootstrap_without_key_switch(&tlwe_and, &cloud_key);
+      .bootstrap_without_key_switch(&tlwe_and, cloud_key);
 
     // and(not(a), c)
     let mut tlwe_and_ny = &(self.not(tlwe_a)) + tlwe_c;
     *tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-0.125));
     let u2: &Ciphertext = &self
       .bootstrap
-      .bootstrap_without_key_switch(&tlwe_and_ny, &cloud_key);
+      .bootstrap_without_key_switch(&tlwe_and_ny, cloud_key);
 
     // or(u1, u2)
     let mut tlwe_or = u1 + u2;
     *tlwe_or.b_mut() = tlwe_or.b().wrapping_add(utils::f64_to_torus(0.125));
 
-    self.bootstrap.bootstrap(&tlwe_or, &cloud_key)
+    self.bootstrap.bootstrap(&tlwe_or, cloud_key)
   }
 
   /// Homomorphic MUX gate (naive version)
@@ -193,9 +193,9 @@ impl Gates {
     tlwe_c: &Ciphertext,
     cloud_key: &CloudKey,
   ) -> Ciphertext {
-    let a_and_b = self.and(tlwe_a, tlwe_b, &cloud_key);
-    let nand_a_c = self.and(&self.not(tlwe_a), tlwe_c, &cloud_key);
-    self.or(&a_and_b, &nand_a_c, &cloud_key)
+    let a_and_b = self.and(tlwe_a, tlwe_b, cloud_key);
+    let nand_a_c = self.and(&self.not(tlwe_a), tlwe_c, cloud_key);
+    self.or(&a_and_b, &nand_a_c, cloud_key)
   }
 
   /// Homomorphic NOT gate (no bootstrapping needed)

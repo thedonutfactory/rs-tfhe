@@ -1,10 +1,10 @@
 use rs_tfhe::bit_utils::{convert, AsBits};
-use rs_tfhe::utils::Ciphertext;
+use rs_tfhe::gates::*;
 use rs_tfhe::key::CloudKey;
 use rs_tfhe::key::SecretKey;
-use rs_tfhe::gates::*;
-use rs_tfhe::tlwe::TLWELv0;
 use rs_tfhe::params::*;
+use rs_tfhe::tlwe::TLWELv0;
+use rs_tfhe::utils::Ciphertext;
 
 use std::time::Instant;
 
@@ -15,7 +15,7 @@ fn full_adder(
   ct_c: &Ciphertext,
 ) -> (Ciphertext, Ciphertext) {
   // tlwe_nand = trgsw::hom_nand(&ct_a, &ct_b, &server_key, &mut fft_plan);
-  
+
   let a_xor_b = xor(ct_a, ct_b, server_key);
   let a_and_b = and(ct_a, ct_b, server_key);
   let a_xor_b_and_c = and(&a_xor_b, ct_c, server_key);
@@ -122,7 +122,7 @@ fn main() {
   println!("Carry: {:?}", carry_pt);
 
   // Convert Boolean tuples to integers and check result
-  // Most Significant Bit in position 0, Least Significant Bit in position 
+  // Most Significant Bit in position 0, Least Significant Bit in position
   let a = convert::<u16>(&a_pt);
   println!("A: {}", a);
 

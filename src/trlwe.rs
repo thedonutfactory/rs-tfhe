@@ -14,6 +14,12 @@ pub struct TRLWELv1 {
   pub b: [Torus; params::trlwe_lv1::N],
 }
 
+impl Default for TRLWELv1 {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl TRLWELv1 {
   pub fn new() -> TRLWELv1 {
     TRLWELv1 {
@@ -23,7 +29,7 @@ impl TRLWELv1 {
   }
 
   pub fn encrypt_f64(
-    p: &Vec<f64>,
+    p: &[f64],
     alpha: f64,
     key: &key::SecretKeyLv1,
     plan: &mut FFTPlan,
@@ -48,12 +54,12 @@ impl TRLWELv1 {
 
   #[allow(dead_code)]
   pub fn encrypt_bool(
-    p_bool: &Vec<bool>,
+    p_bool: &[bool],
     alpha: f64,
     key: &key::SecretKeyLv1,
     plan: &mut FFTPlan,
   ) -> TRLWELv1 {
-    let p_f64 = p_bool
+    let p_f64: Vec<f64> = p_bool
       .iter()
       .map(|e| if *e { 0.125f64 } else { -0.125f64 })
       .collect();
@@ -64,8 +70,8 @@ impl TRLWELv1 {
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv1, plan: &mut FFTPlan) -> Vec<bool> {
     let poly_res = plan.processor.poly_mul::<1024>(&self.a, key);
     let mut res: Vec<bool> = Vec::new();
-    for i in 0..self.a.len() {
-      let value = (self.b[i].wrapping_sub(poly_res[i])) as i32;
+    for (i, &poly_res) in poly_res.iter().enumerate().take(self.a.len()) {
+      let value = (self.b[i].wrapping_sub(poly_res)) as i32;
       if value < 0 {
         res.push(false);
       } else {

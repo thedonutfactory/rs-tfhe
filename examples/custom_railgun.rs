@@ -15,7 +15,7 @@ fn main() {
   // Example 1: Default Railgun (uses Rayon with default settings)
   println!("\n1. Using default Railgun:");
   let default_railgun = parallel::default_railgun();
-  let cloud_key1 = key::CloudKey {
+  let _cloud_key1 = key::CloudKey {
     decomposition_offset: key::gen_decomposition_offset(),
     blind_rotate_testvec: key::gen_testvec(),
     key_switching_key: key::gen_key_switching_key(&secret_key),
@@ -81,7 +81,7 @@ fn main() {
     stack_size: Some(32 * 1024 * 1024), // 32MB for deep recursion
     num_threads: None,                  // Use all available cores
   };
-  let heavy_railgun = parallel::rayon_railgun(heavy_config);
+  let _heavy_railgun = parallel::rayon_railgun(heavy_config);
   println!("  ✓ Heavy workload Railgun: 32MB stack, all cores");
 
   // Light computation (smaller stack, fewer threads)
@@ -89,7 +89,7 @@ fn main() {
     stack_size: Some(4 * 1024 * 1024), // 4MB stack
     num_threads: Some(2),              // Just 2 threads
   };
-  let light_railgun = parallel::rayon_railgun(light_config);
+  let _light_railgun = parallel::rayon_railgun(light_config);
   println!("  ✓ Light workload Railgun: 4MB stack, 2 threads");
 
   println!("\n=== Benefits of Railgun ===");

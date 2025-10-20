@@ -37,7 +37,6 @@
 /// // Use Uint5 parameters for complex arithmetic
 /// let params = SECURITY_UINT5;
 /// ```
-
 pub type Torus = u32;
 pub type HalfTorus = i32;
 pub type IntTorus = i64;
@@ -483,7 +482,7 @@ mod tests {
   #[test]
   fn test_parameter_sanity() {
     // Test all parameter sets
-    let mut params = vec![SECURITY_80_BIT, SECURITY_110_BIT, SECURITY_128_BIT];
+    let params = vec![SECURITY_80_BIT, SECURITY_110_BIT, SECURITY_128_BIT];
 
     #[cfg(feature = "lut-bootstrap")]
     {
