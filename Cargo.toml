@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = "0.7.3"
+rand = "0.9.2"
 rand_distr = "0.3.0"
 rustfft = "6.1.0"
 realfft = "3.3.0"
