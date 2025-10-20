@@ -31,7 +31,7 @@ cc = "1.0.65"
 
 [dev-dependencies]
 core_extensions = "^1.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 num_cpus = "1.16"
 
 [[bench]]
