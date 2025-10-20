@@ -6,13 +6,14 @@
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/your-org/rs-tfhe)
 [![Security](https://img.shields.io/badge/security-128--bit-green.svg)](https://github.com/your-org/rs-tfhe)
-[![Performance](https://img.shields.io/badge/performance-optimized-yellow.svg)](https://github.com/your-org/rs-tfhe)
 
 A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encryption).
 
 ## Overview
 
 rs-tfhe is a comprehensive homomorphic encryption library that enables computation on encrypted data without decryption, built in Rust for performance and safety.
+
+Looking to build in golang? Check out our [Go-TFHE Sister Project](https://github.com/thedonutfactory/go-tfhe)
 
 ### Key Features
 
@@ -275,12 +276,6 @@ impl Generator {
     where F: Fn(usize) -> usize;
 }
 ```
-
-## Documentation
-
-- [LUT Bootstrapping Guide](LUT_BOOTSTRAPPING.md): Comprehensive guide to programmable bootstrapping
-- [Uint Parameters Guide](UINT_PARAMETERS.md): Specialized parameter sets for different message moduli
-- [Go-TFHE Sister Project](go-tfhe/README.md): Go implementation with additional features
 
 ## Contributing
 
