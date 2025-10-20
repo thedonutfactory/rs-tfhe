@@ -166,20 +166,20 @@
 <a href=#166 id=166 data-nosnippet>166</a>    <span class="kw-2">*</span>tlwe_and.b_mut() = tlwe_and.b().wrapping_add(utils::f64_to_torus(-<span class="number">0.125</span>));
 <a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">let </span>u1: <span class="kw-2">&amp;</span>Ciphertext = <span class="kw-2">&amp;</span><span class="self">self
 <a href=#168 id=168 data-nosnippet>168</a>      </span>.bootstrap
-<a href=#169 id=169 data-nosnippet>169</a>      .bootstrap_without_key_switch(<span class="kw-2">&amp;</span>tlwe_and, <span class="kw-2">&amp;</span>cloud_key);
+<a href=#169 id=169 data-nosnippet>169</a>      .bootstrap_without_key_switch(<span class="kw-2">&amp;</span>tlwe_and, cloud_key);
 <a href=#170 id=170 data-nosnippet>170</a>
 <a href=#171 id=171 data-nosnippet>171</a>    <span class="comment">// and(not(a), c)
 <a href=#172 id=172 data-nosnippet>172</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>tlwe_and_ny = <span class="kw-2">&amp;</span>(<span class="self">self</span>.not(tlwe_a)) + tlwe_c;
 <a href=#173 id=173 data-nosnippet>173</a>    <span class="kw-2">*</span>tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-<span class="number">0.125</span>));
 <a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">let </span>u2: <span class="kw-2">&amp;</span>Ciphertext = <span class="kw-2">&amp;</span><span class="self">self
 <a href=#175 id=175 data-nosnippet>175</a>      </span>.bootstrap
-<a href=#176 id=176 data-nosnippet>176</a>      .bootstrap_without_key_switch(<span class="kw-2">&amp;</span>tlwe_and_ny, <span class="kw-2">&amp;</span>cloud_key);
+<a href=#176 id=176 data-nosnippet>176</a>      .bootstrap_without_key_switch(<span class="kw-2">&amp;</span>tlwe_and_ny, cloud_key);
 <a href=#177 id=177 data-nosnippet>177</a>
 <a href=#178 id=178 data-nosnippet>178</a>    <span class="comment">// or(u1, u2)
 <a href=#179 id=179 data-nosnippet>179</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>tlwe_or = u1 + u2;
 <a href=#180 id=180 data-nosnippet>180</a>    <span class="kw-2">*</span>tlwe_or.b_mut() = tlwe_or.b().wrapping_add(utils::f64_to_torus(<span class="number">0.125</span>));
 <a href=#181 id=181 data-nosnippet>181</a>
-<a href=#182 id=182 data-nosnippet>182</a>    <span class="self">self</span>.bootstrap.bootstrap(<span class="kw-2">&amp;</span>tlwe_or, <span class="kw-2">&amp;</span>cloud_key)
+<a href=#182 id=182 data-nosnippet>182</a>    <span class="self">self</span>.bootstrap.bootstrap(<span class="kw-2">&amp;</span>tlwe_or, cloud_key)
 <a href=#183 id=183 data-nosnippet>183</a>  }
 <a href=#184 id=184 data-nosnippet>184</a>
 <a href=#185 id=185 data-nosnippet>185</a>  <span class="doccomment">/// Homomorphic MUX gate (naive version)
@@ -193,9 +193,9 @@
 <a href=#193 id=193 data-nosnippet>193</a>    tlwe_c: <span class="kw-2">&amp;</span>Ciphertext,
 <a href=#194 id=194 data-nosnippet>194</a>    cloud_key: <span class="kw-2">&amp;</span>CloudKey,
 <a href=#195 id=195 data-nosnippet>195</a>  ) -&gt; Ciphertext {
-<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">let </span>a_and_b = <span class="self">self</span>.and(tlwe_a, tlwe_b, <span class="kw-2">&amp;</span>cloud_key);
-<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">let </span>nand_a_c = <span class="self">self</span>.and(<span class="kw-2">&amp;</span><span class="self">self</span>.not(tlwe_a), tlwe_c, <span class="kw-2">&amp;</span>cloud_key);
-<a href=#198 id=198 data-nosnippet>198</a>    <span class="self">self</span>.or(<span class="kw-2">&amp;</span>a_and_b, <span class="kw-2">&amp;</span>nand_a_c, <span class="kw-2">&amp;</span>cloud_key)
+<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">let </span>a_and_b = <span class="self">self</span>.and(tlwe_a, tlwe_b, cloud_key);
+<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">let </span>nand_a_c = <span class="self">self</span>.and(<span class="kw-2">&amp;</span><span class="self">self</span>.not(tlwe_a), tlwe_c, cloud_key);
+<a href=#198 id=198 data-nosnippet>198</a>    <span class="self">self</span>.or(<span class="kw-2">&amp;</span>a_and_b, <span class="kw-2">&amp;</span>nand_a_c, cloud_key)
 <a href=#199 id=199 data-nosnippet>199</a>  }
 <a href=#200 id=200 data-nosnippet>200</a>
 <a href=#201 id=201 data-nosnippet>201</a>  <span class="doccomment">/// Homomorphic NOT gate (no bootstrapping needed)

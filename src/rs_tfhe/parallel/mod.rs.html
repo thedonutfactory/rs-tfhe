@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a></span><span class="kw">static </span>DEFAULT_RAILGUN: OnceLock&lt;RayonRailgun&gt; = OnceLock::new();
 <a href=#94 id=94 data-nosnippet>94</a>
 <a href=#95 id=95 data-nosnippet>95</a><span class="kw">pub fn </span>default_railgun() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>RayonRailgun {
-<a href=#96 id=96 data-nosnippet>96</a>  DEFAULT_RAILGUN.get_or_init(|| RayonRailgun::default())
+<a href=#96 id=96 data-nosnippet>96</a>  DEFAULT_RAILGUN.get_or_init(RayonRailgun::default)
 <a href=#97 id=97 data-nosnippet>97</a>}
 <a href=#98 id=98 data-nosnippet>98</a>
 <a href=#99 id=99 data-nosnippet>99</a><span class="doccomment">/// Create a custom Rayon-based parallelization backend
