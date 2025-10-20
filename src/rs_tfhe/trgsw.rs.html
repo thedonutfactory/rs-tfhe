@@ -315,11 +315,11 @@
 <a href=#315 id=315 data-nosnippet>315</a>  <span class="kw">if </span>k &lt; N {
 <a href=#316 id=316 data-nosnippet>316</a>    res[k..((N - k) + k)].copy_from_slice(<span class="kw-2">&amp;</span>a[..(N - k)]);
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="kw">for </span>i <span class="kw">in </span>(N - k)..N {
-<a href=#318 id=318 data-nosnippet>318</a>      res[i + k - N] = TORUS_SIZE <span class="kw">as </span>Torus - a[i];
+<a href=#318 id=318 data-nosnippet>318</a>      res[i + k - N] = Torus::MAX - a[i];
 <a href=#319 id=319 data-nosnippet>319</a>    }
 <a href=#320 id=320 data-nosnippet>320</a>  } <span class="kw">else </span>{
 <a href=#321 id=321 data-nosnippet>321</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">2 </span>* N - k {
-<a href=#322 id=322 data-nosnippet>322</a>      res[i + k - N] = TORUS_SIZE <span class="kw">as </span>Torus - a[i];
+<a href=#322 id=322 data-nosnippet>322</a>      res[i + k - N] = Torus::MAX - a[i];
 <a href=#323 id=323 data-nosnippet>323</a>    }
 <a href=#324 id=324 data-nosnippet>324</a>    <span class="kw">for </span>i <span class="kw">in </span>(<span class="number">2 </span>* N - k)..N {
 <a href=#325 id=325 data-nosnippet>325</a>      res[i - (<span class="number">2 </span>* N - k)] = a[i];
