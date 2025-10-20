@@ -42,7 +42,6 @@ use std::cell::RefCell;
 // pub type DefaultFFTProcessor = spqlios::spqlios_fft::SpqliosFFT;
 
 pub mod klemsa;
-// #[cfg(not(target_arch = "x86_64"))]
 pub type DefaultFFTProcessor = klemsa::KlemsaProcessor;
 
 pub struct FFTPlan {

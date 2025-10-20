@@ -10,6 +10,8 @@ use rayon::prelude::*;
 ///
 /// This implementation uses Rayon's work-stealing thread pool for
 /// efficient CPU parallelization.
+
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct RayonRailgun {
   config: ParallelConfig,
