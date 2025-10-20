@@ -9,7 +9,7 @@ repository = "https://github.com/your-org/rs-tfhe"
 homepage = "https://github.com/your-org/rs-tfhe"
 documentation = "https://docs.rs/rs_tfhe"
 readme = "README.md"
-keywords = ["homomorphic-encryption", "tfhe", "cryptography", "privacy", "fhe"]
+keywords = ["homomorphic", "tfhe", "cryptography", "privacy", "fhe"]
 categories = ["cryptography", "algorithms"]
 rust-version = "1.70"
 
