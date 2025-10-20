@@ -1,17 +1,17 @@
 [package]
 name = "rs_tfhe"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["lodge <jay.logelin@gmail.com>", "Naoki Matsumoto <m.naoki9911@gmail.com>"]
 edition = "2021"
 description = "A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encryption) with advanced programmable bootstrapping capabilities"
 license-file = "LICENSE"
-repository = "https://github.com/your-org/rs-tfhe"
-homepage = "https://github.com/your-org/rs-tfhe"
+repository = "https://github.com/thedonutfactory/rs-tfhe"
+homepage = "https://github.com/thedonutfactory/rs-tfhe"
 documentation = "https://docs.rs/rs_tfhe"
 readme = "README.md"
 keywords = ["homomorphic", "tfhe", "cryptography", "privacy", "fhe"]
 categories = ["cryptography", "algorithms"]
-rust-version = "1.70"
+rust-version = "1.90.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
