@@ -9,11 +9,13 @@
 
 A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encryption).
 
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/abf6fd0f-b6bf-4e1a-97c7-4d7871e3db35" />
+
 ## Overview
 
 rs-tfhe is a comprehensive homomorphic encryption library that enables computation on encrypted data without decryption, built in Rust for performance and safety.
 
-Looking to build in golang? Check out our [Go-TFHE Sister Project](https://github.com/thedonutfactory/go-tfhe)
+Looking to build in golang? Check out our [go-tfhe Sister Project](https://github.com/thedonutfactory/go-tfhe)
 
 ### Key Features
 
