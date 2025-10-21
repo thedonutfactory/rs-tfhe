@@ -15,7 +15,7 @@ A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encrypti
 
 rs-tfhe is a comprehensive homomorphic encryption library that enables computation on encrypted data without decryption, built in Rust for performance and safety.
 
-(Not the language you were looking for? Check out our [go](https://github.com/thedonutfactory/go-tfhe) or [zig](https://github.com/thedonutfactory/zig-tfhe) sister projects)
+> Not the language you were looking for? Check out our [go](https://github.com/thedonutfactory/go-tfhe) or [zig](https://github.com/thedonutfactory/zig-tfhe) sister projects
 
 ### Key Features
 
