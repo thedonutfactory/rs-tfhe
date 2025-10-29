@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/thedonutfactory/rs-tfhe)
-[![DAITU](https://img.shields.io/badge/AI-Assisted-blue.svg)](DAITU)
+[![DAITU](https://img.shields.io/badge/AI-DAITU%201.0-blue.svg)](DAITU)
 
 A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encryption).
 
