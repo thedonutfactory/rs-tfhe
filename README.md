@@ -44,7 +44,7 @@ rs_tfhe = "0.1.1"
 
 ```toml
 [dependencies]
-rs_tfhe = { version = "0.1.1", features = ["lut-bootstrap", "fft_fma"] }
+rs_tfhe = { version = "0.2.0", features = ["lut-bootstrap", "fft_fma"] }
 ```
 
 Available features:
