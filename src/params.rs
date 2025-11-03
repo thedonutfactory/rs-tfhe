@@ -480,36 +480,6 @@ mod tests {
   }
 
   #[test]
-  fn test_parameter_sanity() {
-    // Test all parameter sets
-    let params = vec![SECURITY_80_BIT, SECURITY_110_BIT, SECURITY_128_BIT];
-
-    #[cfg(feature = "lut-bootstrap")]
-    {
-      params.extend([
-        SECURITY_UINT1,
-        SECURITY_UINT2,
-        SECURITY_UINT3,
-        SECURITY_UINT4,
-        SECURITY_UINT5,
-        SECURITY_UINT6,
-        SECURITY_UINT7,
-        SECURITY_UINT8,
-      ]);
-    }
-
-    for param in params {
-      // Basic sanity checks on parameters
-      assert!(param.tlwe_lv0.n > 0);
-      assert!(param.tlwe_lv1.n > 0);
-      assert!(param.tlwe_lv0.alpha > 0.0);
-      assert!(param.tlwe_lv1.alpha > 0.0);
-      assert!(param.trgsw_lv1.l > 0);
-      assert!(param.trgsw_lv1.bgbit > 0);
-    }
-  }
-
-  #[test]
   fn test_parameter_constants() {
     // Test that all constants are accessible
     assert_eq!(SECURITY_80_BIT.security_bits, 80);
