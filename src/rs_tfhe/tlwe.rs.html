@@ -110,8 +110,8 @@
 <a href=#110 id=110 data-nosnippet>110</a>  </span><span class="attr">#[cfg(feature = <span class="string">"lut-bootstrap"</span>)]
 <a href=#111 id=111 data-nosnippet>111</a>  </span><span class="kw">pub fn </span>decrypt_lwe_message(<span class="kw-2">&amp;</span><span class="self">self</span>, message_modulus: usize, key: <span class="kw-2">&amp;</span>key::SecretKeyLv0) -&gt; usize {
 <a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner_product: Torus = <span class="number">0</span>;
-<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..key.len() {
-<a href=#114 id=114 data-nosnippet>114</a>      inner_product = inner_product.wrapping_add(<span class="self">self</span>.p[i] * key[i]);
+<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">for </span>(i, <span class="kw-2">&amp;</span>key_val) <span class="kw">in </span>key.iter().enumerate() {
+<a href=#114 id=114 data-nosnippet>114</a>      inner_product = inner_product.wrapping_add(<span class="self">self</span>.p[i] * key_val);
 <a href=#115 id=115 data-nosnippet>115</a>    }
 <a href=#116 id=116 data-nosnippet>116</a>
 <a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">let </span>res_torus = <span class="self">self</span>.p[params::tlwe_lv0::N].wrapping_sub(inner_product);
@@ -242,9 +242,9 @@
 <a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 <a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">let </span><span class="kw-2">mut </span>tlwe = TLWELv1::new();
 <a href=#244 id=244 data-nosnippet>244</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner_product: Torus = <span class="number">0</span>;
-<a href=#245 id=245 data-nosnippet>245</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..key.len() {
+<a href=#245 id=245 data-nosnippet>245</a>    <span class="kw">for </span>(i, <span class="kw-2">&amp;</span>key_val) <span class="kw">in </span>key.iter().enumerate() {
 <a href=#246 id=246 data-nosnippet>246</a>      <span class="kw">let </span>rand_torus: Torus = rng.gen();
-<a href=#247 id=247 data-nosnippet>247</a>      inner_product = inner_product.wrapping_add(key[i] * rand_torus);
+<a href=#247 id=247 data-nosnippet>247</a>      inner_product = inner_product.wrapping_add(key_val * rand_torus);
 <a href=#248 id=248 data-nosnippet>248</a>      tlwe.p[i] = rand_torus;
 <a href=#249 id=249 data-nosnippet>249</a>    }
 <a href=#250 id=250 data-nosnippet>250</a>    <span class="kw">let </span>normal_distr = rand_distr::Normal::new(<span class="number">0.0</span>, alpha).unwrap();
@@ -263,8 +263,8 @@
 <a href=#263 id=263 data-nosnippet>263</a>  <span class="attr">#[cfg(test)]
 <a href=#264 id=264 data-nosnippet>264</a>  </span><span class="kw">pub fn </span>decrypt_bool(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>key::SecretKeyLv1) -&gt; bool {
 <a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner_product: Torus = <span class="number">0</span>;
-<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..key.len() {
-<a href=#267 id=267 data-nosnippet>267</a>      inner_product = inner_product.wrapping_add(<span class="self">self</span>.p[i] * key[i]);
+<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">for </span>(i, <span class="kw-2">&amp;</span>key_val) <span class="kw">in </span>key.iter().enumerate() {
+<a href=#267 id=267 data-nosnippet>267</a>      inner_product = inner_product.wrapping_add(<span class="self">self</span>.p[i] * key_val);
 <a href=#268 id=268 data-nosnippet>268</a>    }
 <a href=#269 id=269 data-nosnippet>269</a>
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">let </span>res_torus = (<span class="self">self</span>.p[key.len()].wrapping_sub(inner_product)) <span class="kw">as </span>HalfTorus;

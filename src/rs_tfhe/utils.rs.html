@@ -56,10 +56,10 @@
 <a href=#56 id=56 data-nosnippet>56</a>  </span><span class="kw">fn </span>test_gussian_32bit() {
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">let </span>normal = Normal::new(<span class="number">0.0</span>, <span class="number">0.1</span>).unwrap();
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">let </span>torus = gussian_torus_vec(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="number">12</span>], <span class="kw-2">&amp;</span>normal, <span class="kw-2">&amp;mut </span>rng);
+<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">let </span>torus = gussian_torus_vec(<span class="kw-2">&amp;</span>[<span class="number">12</span>], <span class="kw-2">&amp;</span>normal, <span class="kw-2">&amp;mut </span>rng);
 <a href=#60 id=60 data-nosnippet>60</a>    <span class="macro">assert_eq!</span>(torus.len(), <span class="number">1</span>);
 <a href=#61 id=61 data-nosnippet>61</a>
-<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>torus2 = gussian_torus_vec(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="number">12</span>, <span class="number">11</span>], <span class="kw-2">&amp;</span>normal, <span class="kw-2">&amp;mut </span>rng);
+<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>torus2 = gussian_torus_vec(<span class="kw-2">&amp;</span>[<span class="number">12</span>, <span class="number">11</span>], <span class="kw-2">&amp;</span>normal, <span class="kw-2">&amp;mut </span>rng);
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="macro">assert_eq!</span>(torus2.len(), <span class="number">2</span>);
 <a href=#64 id=64 data-nosnippet>64</a>  }
 <a href=#65 id=65 data-nosnippet>65</a>
@@ -68,9 +68,9 @@
 <a href=#68 id=68 data-nosnippet>68</a>    normal_distr: <span class="kw-2">&amp;</span>rand_distr::Normal&lt;f64&gt;,
 <a href=#69 id=69 data-nosnippet>69</a>    rng: <span class="kw-2">&amp;mut </span>rand::rngs::ThreadRng,
 <a href=#70 id=70 data-nosnippet>70</a>  ) -&gt; Vec&lt;Torus&gt; {
-<a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">return </span>mu
+<a href=#71 id=71 data-nosnippet>71</a>    mu
 <a href=#72 id=72 data-nosnippet>72</a>      .iter()
 <a href=#73 id=73 data-nosnippet>73</a>      .map(|<span class="kw-2">&amp;</span>e| gaussian_torus(e, normal_distr, rng))
-<a href=#74 id=74 data-nosnippet>74</a>      .collect();
+<a href=#74 id=74 data-nosnippet>74</a>      .collect()
 <a href=#75 id=75 data-nosnippet>75</a>  }
 <a href=#76 id=76 data-nosnippet>76</a>}</code></pre></div></section></main></body></html>

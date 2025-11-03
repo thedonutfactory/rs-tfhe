@@ -255,7 +255,7 @@
 <a href=#255 id=255 data-nosnippet>255</a>    };
 <a href=#256 id=256 data-nosnippet>256</a>
 <a href=#257 id=257 data-nosnippet>257</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..params::tlwe_lv0::N {
-<a href=#258 id=258 data-nosnippet>258</a>      <span class="kw">let </span>a_tilda = ((src.p[i <span class="kw">as </span>usize].wrapping_add(<span class="number">1 </span>&lt;&lt; (TORUS_SIZE - <span class="number">1 </span>- NBIT - <span class="number">1</span>)))
+<a href=#258 id=258 data-nosnippet>258</a>      <span class="kw">let </span>a_tilda = ((src.p[i].wrapping_add(<span class="number">1 </span>&lt;&lt; (TORUS_SIZE - <span class="number">1 </span>- NBIT - <span class="number">1</span>)))
 <a href=#259 id=259 data-nosnippet>259</a>        &gt;&gt; (TORUS_SIZE - NBIT - <span class="number">1</span>)) <span class="kw">as </span>usize;
 <a href=#260 id=260 data-nosnippet>260</a>      <span class="kw">let </span>res2 = trlwe::TRLWELv1 {
 <a href=#261 id=261 data-nosnippet>261</a>        a: poly_mul_with_x_k(<span class="kw-2">&amp;</span>res.a, a_tilda),
@@ -264,7 +264,7 @@
 <a href=#264 id=264 data-nosnippet>264</a>      res = cmux(
 <a href=#265 id=265 data-nosnippet>265</a>        <span class="kw-2">&amp;</span>res,
 <a href=#266 id=266 data-nosnippet>266</a>        <span class="kw-2">&amp;</span>res2,
-<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw-2">&amp;</span>cloud_key.bootstrapping_key[i <span class="kw">as </span>usize],
+<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw-2">&amp;</span>cloud_key.bootstrapping_key[i],
 <a href=#268 id=268 data-nosnippet>268</a>        cloud_key,
 <a href=#269 id=269 data-nosnippet>269</a>        <span class="kw-2">&amp;mut </span>plan.borrow_mut(),
 <a href=#270 id=270 data-nosnippet>270</a>      );

@@ -214,12 +214,12 @@
 <a href=#214 id=214 data-nosnippet>214</a>        <span class="kw-2">&amp;mut </span>plan,
 <a href=#215 id=215 data-nosnippet>215</a>      );
 <a href=#216 id=216 data-nosnippet>216</a>
-<a href=#217 id=217 data-nosnippet>217</a>      <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..N {
+<a href=#217 id=217 data-nosnippet>217</a>      <span class="kw">for </span>(j, <span class="kw-2">&amp;</span>plain_val) <span class="kw">in </span>plain_text.iter().enumerate().take(N) {
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>tlwe = trlwe::sample_extract_index(<span class="kw-2">&amp;</span>c, j);
 <a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>dec = tlwe.decrypt_bool(<span class="kw-2">&amp;</span>key.key_lv1);
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>dec_dirty = tlwe.decrypt_bool(<span class="kw-2">&amp;</span>key_dirty.key_lv1);
-<a href=#221 id=221 data-nosnippet>221</a>        <span class="macro">assert_eq!</span>(plain_text[j], dec);
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">if </span>plain_text[j] != dec_dirty {
+<a href=#221 id=221 data-nosnippet>221</a>        <span class="macro">assert_eq!</span>(plain_val, dec);
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">if </span>plain_val != dec_dirty {
 <a href=#223 id=223 data-nosnippet>223</a>          correct += <span class="number">1</span>;
 <a href=#224 id=224 data-nosnippet>224</a>        }
 <a href=#225 id=225 data-nosnippet>225</a>      }
