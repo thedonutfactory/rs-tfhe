@@ -1,6 +1,6 @@
 [package]
 name = "rs_tfhe"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["lodge <jay.logelin@gmail.com>", "Naoki Matsumoto <m.naoki9911@gmail.com>"]
 edition = "2021"
 description = "A high-performance Rust implementation of TFHE (Torus Fully Homomorphic Encryption) with advanced programmable bootstrapping capabilities"
@@ -46,5 +46,8 @@ fft_fma = []
 
 # LUT bootstrapping - programmable bootstrapping with lookup tables
 lut-bootstrap = []
+
+# Proxy reencryption - convert ciphertexts between different keys
+proxy-reenc = []
 
 default = ["bootstrapping", "fft_fma"]

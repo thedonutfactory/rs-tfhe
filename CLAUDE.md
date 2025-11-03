@@ -48,6 +48,7 @@ assert_eq!(decrypted, false);
 ```bash
 cargo run --example add_two_numbers --release
 cargo run --example lut_bootstrapping --features "lut-bootstrap" --release
+cargo run --example proxy_reencryption_demo --features "proxy-reenc" --release
 ```
 
 ## Security Parameters
@@ -69,11 +70,12 @@ let security = params::SECURITY_128_BIT;  // Default: high security
 ## Feature Flags
 
 ```toml
-rs_tfhe = { version = "0.1.1", features = ["lut-bootstrap", "fft_fma"] }
+rs_tfhe = { version = "0.1.1", features = ["lut-bootstrap", "proxy-reenc", "fft_fma"] }
 ```
 
 - `bootstrapping`: Enable bootstrapping operations (default)
 - `lut-bootstrap`: Programmable bootstrapping with lookup tables
+- `proxy-reenc`: LWE proxy reencryption for secure delegation
 - `fft_avx`: AVX-optimized FFT (x86_64 only)
 - `fft_fma`: FMA-optimized FFT (default)
 
@@ -90,6 +92,29 @@ cargo bench
 **Implemented**: Core TFHE, gates, vanilla/LUT bootstrapping, FFT, parallelization  
 **Recent**: CRT bootstrap optimizations, advanced arithmetic operations  
 **Performance**: 2.7x faster than alternatives, optimized for production use
+
+## Proxy Reencryption
+
+Securely delegate access to encrypted data without decryption:
+
+```rust
+#[cfg(feature = "proxy-reenc")]
+use rs_tfhe::proxy_reenc::{ProxyReencryptionKey, reencrypt_tlwe_lv0};
+
+// Alice encrypts data
+let alice_key = SecretKey::new();
+let bob_key = SecretKey::new();
+let alice_ct = TLWELv0::encrypt_bool(true, params::tlwe_lv0::ALPHA, &alice_key.key_lv0);
+
+// Alice generates reencryption key for Bob
+let reenc_key = ProxyReencryptionKey::new(&alice_key.key_lv0, &bob_key.key_lv0);
+
+// Proxy converts without learning plaintext
+let bob_ct = reencrypt_tlwe_lv0(&alice_ct, &reenc_key);
+
+// Bob can now decrypt
+assert_eq!(bob_ct.decrypt_bool(&bob_key.key_lv0), true);
+```
 
 ## Key Patterns
 
