@@ -9,6 +9,10 @@ pub mod lut;
 
 pub mod parallel;
 pub mod params;
+
+#[cfg(feature = "proxy-reenc")]
+pub mod proxy_reenc;
+
 pub mod tlwe;
 pub mod trgsw;
 pub mod trlwe;

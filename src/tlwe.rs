@@ -213,6 +213,7 @@ impl SubMul for &TLWELv0 {
   }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct TLWELv1 {
   pub p: [Torus; params::tlwe_lv1::N + 1],
 }
