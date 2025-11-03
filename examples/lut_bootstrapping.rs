@@ -17,7 +17,7 @@ use rs_tfhe::bootstrap::lut::LutBootstrap;
 #[cfg(feature = "lut-bootstrap")]
 use rs_tfhe::key;
 #[cfg(feature = "lut-bootstrap")]
-use rs_tfhe::lut::{Generator, LookupTable};
+use rs_tfhe::lut::Generator;
 #[cfg(feature = "lut-bootstrap")]
 use rs_tfhe::params;
 #[cfg(feature = "lut-bootstrap")]

@@ -29,8 +29,8 @@ fn full_adder(
 
 pub fn add(
   server_key: &CloudKey,
-  a: &Vec<Ciphertext>,
-  b: &Vec<Ciphertext>,
+  a: &[Ciphertext],
+  b: &[Ciphertext],
   cin: Ciphertext,
 ) -> (Vec<Ciphertext>, Ciphertext) {
   assert_eq!(
@@ -50,8 +50,8 @@ pub fn add(
 
 pub fn sub(
   server_key: &CloudKey,
-  a: &Vec<Ciphertext>,
-  b: &Vec<Ciphertext>,
+  a: &[Ciphertext],
+  b: &[Ciphertext],
   cin: Ciphertext,
 ) -> (Vec<Ciphertext>, Ciphertext) {
   assert_eq!(

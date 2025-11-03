@@ -108,8 +108,8 @@ impl Generator {
       let encoded_y = self.encoder.encode(y);
 
       // Fill range
-      for xx in start..end {
-        lut_raw[xx] = encoded_y;
+      for item in lut_raw.iter_mut().take(end).skip(start) {
+        *item = encoded_y;
       }
     }
 
@@ -118,20 +118,20 @@ impl Generator {
 
     // Apply rotation
     let mut rotated = vec![0 as Torus; self.lookup_table_size];
-    for i in 0..self.lookup_table_size {
+    for (i, item) in rotated.iter_mut().enumerate().take(self.lookup_table_size) {
       let src_idx = (i + offset) % self.lookup_table_size;
-      rotated[i] = lut_raw[src_idx];
+      *item = lut_raw[src_idx];
     }
 
     // Negate tail portion
-    for i in (self.lookup_table_size - offset)..self.lookup_table_size {
-      rotated[i] = rotated[i].wrapping_neg();
+    for item in rotated.iter_mut().take(self.lookup_table_size).skip(self.lookup_table_size - offset) {
+      *item = item.wrapping_neg();
     }
 
     // Store in polynomial
     // For poly_extend_factor=1: just copy all lookup_table_size coefficients
-    for i in 0..self.lookup_table_size {
-      lut_out.poly.b[i] = rotated[i];
+    for (i, item) in rotated.iter().enumerate().take(self.lookup_table_size) {
+      lut_out.poly.b[i] = *item;
       lut_out.poly.a[i] = 0;
     }
   }
@@ -171,24 +171,24 @@ impl Generator {
 
       let y = f(x);
 
-      for i in start..end {
-        lut_raw[i] = y;
+      for item in lut_raw.iter_mut().take(end).skip(start) {
+        *item = y;
       }
     }
 
     let offset = div_round(self.lookup_table_size, 2 * message_modulus);
     let mut rotated = vec![0 as Torus; self.lookup_table_size];
-    for i in 0..self.lookup_table_size {
+    for (i, item) in rotated.iter_mut().enumerate().take(self.lookup_table_size) {
       let src_idx = (i + offset) % self.lookup_table_size;
-      rotated[i] = lut_raw[src_idx];
+      *item = lut_raw[src_idx];
     }
 
-    for i in (self.lookup_table_size - offset)..self.lookup_table_size {
-      rotated[i] = rotated[i].wrapping_neg();
+    for item in rotated.iter_mut().take(self.lookup_table_size).skip(self.lookup_table_size - offset) {
+      *item = item.wrapping_neg();
     }
 
-    for i in 0..self.lookup_table_size {
-      lut_out.poly.b[i] = rotated[i];
+    for (i, item) in rotated.iter().enumerate().take(self.lookup_table_size) {
+      lut_out.poly.b[i] = *item;
       lut_out.poly.a[i] = 0;
     }
   }
@@ -234,8 +234,7 @@ impl Generator {
   /// Converted value in [0, lookup_table_size)
   pub fn mod_switch(&self, x: Torus) -> usize {
     let scaled = (x as f64) / (u32::MAX as f64) * (self.lookup_table_size as f64);
-    let result = scaled.round() as usize % self.lookup_table_size;
-    result
+    scaled.round() as usize % self.lookup_table_size
   }
 
   /// Get the message modulus

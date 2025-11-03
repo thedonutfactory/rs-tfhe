@@ -255,7 +255,7 @@ pub fn blind_rotate_with_testvec(
     };
 
     for i in 0..params::tlwe_lv0::N {
-      let a_tilda = ((src.p[i as usize].wrapping_add(1 << (TORUS_SIZE - 1 - NBIT - 1)))
+      let a_tilda = ((src.p[i].wrapping_add(1 << (TORUS_SIZE - 1 - NBIT - 1)))
         >> (TORUS_SIZE - NBIT - 1)) as usize;
       let res2 = trlwe::TRLWELv1 {
         a: poly_mul_with_x_k(&res.a, a_tilda),
@@ -264,7 +264,7 @@ pub fn blind_rotate_with_testvec(
       res = cmux(
         &res,
         &res2,
-        &cloud_key.bootstrapping_key[i as usize],
+        &cloud_key.bootstrapping_key[i],
         cloud_key,
         &mut plan.borrow_mut(),
       );

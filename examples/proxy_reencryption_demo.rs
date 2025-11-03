@@ -46,7 +46,7 @@ fn main() {
 
   // Alice encrypts some data
   println!("2. Alice encrypts her data...");
-  let messages = vec![true, false, true, true, false];
+  let messages = [true, false, true, true, false];
   let alice_ciphertexts: Vec<TLWELv0> = messages
     .iter()
     .map(|&msg| TLWELv0::encrypt_bool(msg, params::tlwe_lv0::ALPHA, &alice_key.key_lv0))

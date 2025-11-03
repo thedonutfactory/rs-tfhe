@@ -114,11 +114,10 @@ impl Bootstrap for LutBootstrap {
   fn bootstrap_without_key_switch(&self, ctxt: &Ciphertext, cloud_key: &CloudKey) -> Ciphertext {
     // For LUT bootstrapping, we always need key switching to get back to level 0
     // So we perform full bootstrap and then extract without key switch
-    let full_result = self.bootstrap(ctxt, cloud_key);
 
     // This is a simplified implementation - in practice, we would need
     // to modify the internal operations to support this properly
-    full_result
+    self.bootstrap(ctxt, cloud_key)
   }
 
   fn name(&self) -> &str {
@@ -219,7 +218,7 @@ mod tests {
       let decrypted_message = bootstrapped.decrypt_lwe_message(2, &key.key_lv0);
       let decrypted = decrypted_message != 0;
 
-      assert_eq!(true, decrypted, "Constant true function failed");
+      assert!(decrypted, "Constant true function failed");
     }
   }
 

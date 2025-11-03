@@ -133,8 +133,8 @@ mod tests {
     assert_eq!(encoder.decode(encoded_1), 1);
 
     // Test boolean decoding
-    assert_eq!(encoder.decode_bool(encoded_0), false);
-    assert_eq!(encoder.decode_bool(encoded_1), true);
+    assert!(!encoder.decode_bool(encoded_0));
+    assert!(encoder.decode_bool(encoded_1));
   }
 
   #[test]

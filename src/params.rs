@@ -179,15 +179,15 @@ pub const SECURITY_UINT2: SecurityParams = SecurityParams {
   description: "Uint2 parameters (2-bit messages, messageModulus=4, N=1024)",
   tlwe_lv0: TlweParams {
     n: 687,
-    alpha: 0.00002120846893069971872305794214,
+    alpha: 0.000_021_208_468_930_699_72,
   },
   tlwe_lv1: TlweParams {
     n: 1024, // Using 1024 for compatibility with hardcoded TRGSW/TRLWE
-    alpha: 0.00000000000231841227527049948463,
+    alpha: 0.000_000_000_002_318_412_275_270_499_5,
   },
   trlwe_lv1: TrlweParams {
     n: 1024,
-    alpha: 0.00000000000231841227527049948463,
+    alpha: 0.000_000_000_002_318_412_275_270_499_5,
   },
   trgsw_lv1: TrgswParams {
     n: 1024,
@@ -197,7 +197,7 @@ pub const SECURITY_UINT2: SecurityParams = SecurityParams {
     l: 1,
     basebit: 4, // KeySwitch base bits
     iks_t: 3,   // KeySwitch level
-    alpha: 0.00000000000231841227527049948463,
+    alpha: 0.000_000_000_002_318_412_275_270_499_5,
   },
 };
 
@@ -208,15 +208,15 @@ pub const SECURITY_UINT3: SecurityParams = SecurityParams {
   description: "Uint3 parameters (3-bit messages, messageModulus=8, N=1024)",
   tlwe_lv0: TlweParams {
     n: 820,
-    alpha: 0.00000251676160959795544987084234,
+    alpha: 0.000_002_516_761_609_597_955_4,
   },
   tlwe_lv1: TlweParams {
     n: 1024,
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
   trlwe_lv1: TrlweParams {
     n: 1024,
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
   trgsw_lv1: TrgswParams {
     n: 1024,
@@ -226,7 +226,7 @@ pub const SECURITY_UINT3: SecurityParams = SecurityParams {
     l: 1,
     basebit: 6, // KeySwitch base bits
     iks_t: 2,   // KeySwitch level
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
 };
 
@@ -237,15 +237,15 @@ pub const SECURITY_UINT4: SecurityParams = SecurityParams {
   description: "Uint4 parameters (4-bit messages, messageModulus=16, N=1024)",
   tlwe_lv0: TlweParams {
     n: 820,
-    alpha: 0.00000251676160959795544987084234,
+    alpha: 0.000_002_516_761_609_597_955_4,
   },
   tlwe_lv1: TlweParams {
     n: 1024,
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
   trlwe_lv1: TrlweParams {
     n: 1024,
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
   trgsw_lv1: TrgswParams {
     n: 1024,
@@ -255,7 +255,7 @@ pub const SECURITY_UINT4: SecurityParams = SecurityParams {
     l: 1,
     basebit: 5, // KeySwitch base bits
     iks_t: 3,   // KeySwitch level
-    alpha: 0.00000000000000022204460492503131,
+    alpha: 0.000_000_000_000_000_222_044_604_925_031_3,
   },
 };
 
@@ -266,7 +266,7 @@ pub const SECURITY_UINT5: SecurityParams = SecurityParams {
   description: "Uint5 parameters (5-bit messages, messageModulus=32, N=1024)",
   tlwe_lv0: TlweParams {
     n: 1071,
-    alpha: 7.088226765410429399593757e-08,
+    alpha: 7.088_226_765_410_43e-8,
   },
   tlwe_lv1: TlweParams {
     n: 1024,
@@ -295,7 +295,7 @@ pub const SECURITY_UINT6: SecurityParams = SecurityParams {
   description: "Uint6 parameters (6-bit messages, messageModulus=64, N=1024)",
   tlwe_lv0: TlweParams {
     n: 1071,
-    alpha: 7.088226765410429399593757e-08,
+    alpha: 7.088_226_765_410_43e-8,
   },
   tlwe_lv1: TlweParams {
     n: 1024,
@@ -324,7 +324,7 @@ pub const SECURITY_UINT7: SecurityParams = SecurityParams {
   description: "Uint7 parameters (7-bit messages, messageModulus=128, N=1024)",
   tlwe_lv0: TlweParams {
     n: 1160,
-    alpha: 1.966220007498402695211596e-08,
+    alpha: 1.966_220_007_498_402_7e-8,
   },
   tlwe_lv1: TlweParams {
     n: 1024,
@@ -353,7 +353,7 @@ pub const SECURITY_UINT8: SecurityParams = SecurityParams {
   description: "Uint8 parameters (8-bit messages, messageModulus=256, N=1024)",
   tlwe_lv0: TlweParams {
     n: 1160,
-    alpha: 1.966220007498402695211596e-08,
+    alpha: 1.966_220_007_498_402_7e-8,
   },
   tlwe_lv1: TlweParams {
     n: 1024,

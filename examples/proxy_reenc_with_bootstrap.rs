@@ -55,8 +55,8 @@ fn main() {
 
   // Generate public keys (for asymmetric mode)
   let mut public_keys: Vec<PublicKeyLv0> = Vec::with_capacity(HOPS);
-  for i in 1..=HOPS {
-    public_keys.push(PublicKeyLv0::new(&secret_keys[i].key_lv0));
+  for key in secret_keys.iter().take(HOPS + 1).skip(1) {
+    public_keys.push(PublicKeyLv0::new(&key.key_lv0));
   }
 
   println!("✓ All keys generated\n");
@@ -103,8 +103,8 @@ fn main() {
     let mut ct = TLWELv0::encrypt_bool(test_msg, params::tlwe_lv0::ALPHA, &secret_keys[0].key_lv0);
 
     // Chain through all hops
-    for hop in 0..HOPS {
-      ct = reencrypt_tlwe_lv0(&ct, &reenc_keys[hop]);
+    for reenc_key in reenc_keys.iter().take(HOPS) {
+      ct = reencrypt_tlwe_lv0(&ct, reenc_key);
     }
 
     // Final party decrypts

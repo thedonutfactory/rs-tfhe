@@ -51,7 +51,7 @@ fn main() {
     let d = tlwe::TLWELv0::encrypt_bool(false, alpha, &secret_key.key_lv0);
 
     // Batch operations with custom railgun
-    let inputs = vec![(a.clone(), b.clone()), (c.clone(), d.clone())];
+    let inputs = vec![(a, b), (c, d)];
 
     let railgun_for_batch = parallel::RayonRailgun::with_config(parallel::ParallelConfig {
       stack_size: Some(8 * 1024 * 1024),

@@ -110,8 +110,8 @@ impl TLWELv0 {
   #[cfg(feature = "lut-bootstrap")]
   pub fn decrypt_lwe_message(&self, message_modulus: usize, key: &key::SecretKeyLv0) -> usize {
     let mut inner_product: Torus = 0;
-    for i in 0..key.len() {
-      inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
+    for (i, &key_val) in key.iter().enumerate() {
+      inner_product = inner_product.wrapping_add(self.p[i] * key_val);
     }
 
     let res_torus = self.p[params::tlwe_lv0::N].wrapping_sub(inner_product);
@@ -242,9 +242,9 @@ impl TLWELv1 {
     let mut rng = rand::thread_rng();
     let mut tlwe = TLWELv1::new();
     let mut inner_product: Torus = 0;
-    for i in 0..key.len() {
+    for (i, &key_val) in key.iter().enumerate() {
       let rand_torus: Torus = rng.gen();
-      inner_product = inner_product.wrapping_add(key[i] * rand_torus);
+      inner_product = inner_product.wrapping_add(key_val * rand_torus);
       tlwe.p[i] = rand_torus;
     }
     let normal_distr = rand_distr::Normal::new(0.0, alpha).unwrap();
@@ -263,8 +263,8 @@ impl TLWELv1 {
   #[cfg(test)]
   pub fn decrypt_bool(&self, key: &key::SecretKeyLv1) -> bool {
     let mut inner_product: Torus = 0;
-    for i in 0..key.len() {
-      inner_product = inner_product.wrapping_add(self.p[i] * key[i]);
+    for (i, &key_val) in key.iter().enumerate() {
+      inner_product = inner_product.wrapping_add(self.p[i] * key_val);
     }
 
     let res_torus = (self.p[key.len()].wrapping_sub(inner_product)) as HalfTorus;

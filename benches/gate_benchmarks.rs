@@ -27,17 +27,15 @@ fn bench_all_gates(c: &mut Criterion) {
   let tlwe_true = Ciphertext::encrypt_bool(true, params::tlwe_lv0::ALPHA, &key.key_lv0);
   let tlwe_false = Ciphertext::encrypt_bool(false, params::tlwe_lv0::ALPHA, &key.key_lv0);
 
-  let gates: Vec<(
-    &str,
-    Box<dyn Fn(&Ciphertext, &Ciphertext, &key::CloudKey) -> Ciphertext>,
-  )> = vec![
-    ("NAND", Box::new(|a, b, k| gates::nand(a, b, k))),
-    ("AND", Box::new(|a, b, k| gates::and(a, b, k))),
-    ("OR", Box::new(|a, b, k| gates::or(a, b, k))),
-    ("XOR", Box::new(|a, b, k| gates::xor(a, b, k))),
-    ("NOR", Box::new(|a, b, k| gates::nor(a, b, k))),
-    ("XNOR", Box::new(|a, b, k| gates::xnor(a, b, k))),
-  ];
+    type GateFunc = Box<dyn Fn(&Ciphertext, &Ciphertext, &key::CloudKey) -> Ciphertext>;
+    let gates: Vec<(&str, GateFunc)> = vec![
+      ("NAND", Box::new(gates::nand)),
+      ("AND", Box::new(gates::and)),
+      ("OR", Box::new(gates::or)),
+      ("XOR", Box::new(gates::xor)),
+      ("NOR", Box::new(gates::nor)),
+      ("XNOR", Box::new(gates::xnor)),
+    ];
 
   let mut group = c.benchmark_group("homomorphic_gates");
 

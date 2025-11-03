@@ -214,12 +214,12 @@ mod tests {
         &mut plan,
       );
 
-      for j in 0..N {
+      for (j, &plain_val) in plain_text.iter().enumerate().take(N) {
         let tlwe = trlwe::sample_extract_index(&c, j);
         let dec = tlwe.decrypt_bool(&key.key_lv1);
         let dec_dirty = tlwe.decrypt_bool(&key_dirty.key_lv1);
-        assert_eq!(plain_text[j], dec);
-        if plain_text[j] != dec_dirty {
+        assert_eq!(plain_val, dec);
+        if plain_val != dec_dirty {
           correct += 1;
         }
       }

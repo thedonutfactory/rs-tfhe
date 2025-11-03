@@ -12,7 +12,7 @@ fn main() {
 }
 
 #[cfg(feature = "lut-bootstrap")]
-use rs_tfhe::lut::{Encoder, Generator, LookupTable};
+use rs_tfhe::lut::{Encoder, Generator};
 
 #[cfg(feature = "lut-bootstrap")]
 fn main() {

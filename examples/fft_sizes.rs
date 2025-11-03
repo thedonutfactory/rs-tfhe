@@ -22,8 +22,8 @@ fn main() {
 
   // Create test input (1024 elements)
   let mut input_1024 = [0u32; 1024];
-  for i in 0..1024 {
-    input_1024[i] = (i as u32 * 100) % (params::TORUS_SIZE as u32);
+  for (i, item) in input_1024.iter_mut().enumerate() {
+    *item = (i as u32 * 100) % (params::TORUS_SIZE as u32);
   }
 
   // Use the generic method

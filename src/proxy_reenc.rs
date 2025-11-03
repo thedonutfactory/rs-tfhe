@@ -303,14 +303,14 @@ impl ProxyReencryptionKey {
     let mut key_encryptions = vec![TLWELv0::new(); base * t * n];
 
     // Generate decomposed encryptions using the PUBLIC key
-    for i in 0..n {
+    for (i, &key_val) in key_from.iter().enumerate().take(n) {
       for j in 0..t {
         for k in 0..base {
           if k == 0 {
             continue; // Skip k=0 as it contributes nothing
           }
           // Encrypt k * key_from[i] / 2^((j+1)*basebit) using Bob's PUBLIC key
-          let p = ((k as u32 * key_from[i]) as f64) / ((1 << ((j + 1) * basebit)) as f64);
+          let p = ((k as u32 * key_val) as f64) / ((1 << ((j + 1) * basebit)) as f64);
           let idx = (base * t * i) + (base * j) + k;
           // Use public key encryption instead of secret key
           key_encryptions[idx] = public_key_to.encrypt_f64(p, alpha);
@@ -398,14 +398,14 @@ impl ProxyReencryptionKey {
     let mut key_encryptions = vec![TLWELv0::new(); base * t * n];
 
     // Generate decomposed encryptions similar to gen_key_switching_key
-    for i in 0..n {
+    for (i, &key_val) in key_from.iter().enumerate().take(n) {
       for j in 0..t {
         for k in 0..base {
           if k == 0 {
             continue; // Skip k=0 as it contributes nothing
           }
           // Encrypt k * key_from[i] / 2^((j+1)*basebit)
-          let p = ((k as u32 * key_from[i]) as f64) / ((1 << ((j + 1) * basebit)) as f64);
+          let p = ((k as u32 * key_val) as f64) / ((1 << ((j + 1) * basebit)) as f64);
           let idx = (base * t * i) + (base * j) + k;
           key_encryptions[idx] = TLWELv0::encrypt_f64(p, alpha, key_to);
         }

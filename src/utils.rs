@@ -56,10 +56,10 @@ mod tests {
   fn test_gussian_32bit() {
     let normal = Normal::new(0.0, 0.1).unwrap();
     let mut rng = rand::thread_rng();
-    let torus = gussian_torus_vec(&vec![12], &normal, &mut rng);
+    let torus = gussian_torus_vec(&[12], &normal, &mut rng);
     assert_eq!(torus.len(), 1);
 
-    let torus2 = gussian_torus_vec(&vec![12, 11], &normal, &mut rng);
+    let torus2 = gussian_torus_vec(&[12, 11], &normal, &mut rng);
     assert_eq!(torus2.len(), 2);
   }
 
@@ -68,9 +68,9 @@ mod tests {
     normal_distr: &rand_distr::Normal<f64>,
     rng: &mut rand::rngs::ThreadRng,
   ) -> Vec<Torus> {
-    return mu
+    mu
       .iter()
       .map(|&e| gaussian_torus(e, normal_distr, rng))
-      .collect();
+      .collect()
   }
 }

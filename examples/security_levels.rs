@@ -42,12 +42,12 @@ fn main() {
   println!();
 
   // Test data
-  let test_cases = vec![
-    (true, true, "AND"),
-    (true, false, "AND"),
-    (false, true, "OR"),
-    (false, false, "XOR"),
-  ];
+    let test_cases = [
+      (true, true, "AND"),
+      (true, false, "AND"),
+      (false, true, "OR"),
+      (false, false, "XOR"),
+    ];
 
   println!("🧪 Running Homomorphic Operations:");
   println!();
