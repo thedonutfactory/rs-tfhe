@@ -22,7 +22,7 @@ rustfft = "6.1.0"
 realfft = "3.3.0"
 rayon = "1.10"
 dyn-stack = "=0.11.0"
-pulp = "0.18"
+pulp = "0.22"
 aligned-vec = "0.6"
 once_cell = "1.21.3"
 
