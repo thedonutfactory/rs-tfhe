@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/bootstrap/lut.rs`."><title>lut.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rs_tfhe" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rs_tfhe/bootstrap/</div>lut.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! LUT (Lookup Table) bootstrapping implementation
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/bootstrap/lut.rs`."><title>lut.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rs_tfhe" data-themes="" data-resource-suffix="" data-rustdoc-version="1.93.1 (01f6ddf75 2026-02-11)" data-channel="1.93.1" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rs_tfhe/bootstrap/</div>lut.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! LUT (Lookup Table) bootstrapping implementation
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module provides programmable bootstrapping functionality that allows
 <a href=#4 id=4 data-nosnippet>4</a>//! evaluating arbitrary functions on encrypted data during the bootstrapping
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">let </span>identity = |x: usize| x;
 <a href=#150 id=150 data-nosnippet>150</a>
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
-<a href=#152 id=152 data-nosnippet>152</a>      <span class="kw">let </span>plain = rng.gen::&lt;bool&gt;();
+<a href=#152 id=152 data-nosnippet>152</a>      <span class="kw">let </span>plain = rng.<span class="kw">gen</span>::&lt;bool&gt;();
 <a href=#153 id=153 data-nosnippet>153</a>      <span class="kw">let </span>message = <span class="kw">if </span>plain { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
 <a href=#154 id=154 data-nosnippet>154</a>      <span class="kw">let </span>encrypted = Ciphertext::encrypt_lwe_message(
 <a href=#155 id=155 data-nosnippet>155</a>        message,
@@ -160,7 +160,7 @@
 <a href=#160 id=160 data-nosnippet>160</a>
 <a href=#161 id=161 data-nosnippet>161</a>      <span class="kw">let </span>bootstrapped = bootstrap.bootstrap_func(<span class="kw-2">&amp;</span>encrypted, identity, <span class="number">2</span>, <span class="kw-2">&amp;</span>cloud_key);
 <a href=#162 id=162 data-nosnippet>162</a>      <span class="kw">let </span>decrypted_message = bootstrapped.decrypt_lwe_message(<span class="number">2</span>, <span class="kw-2">&amp;</span>key.key_lv0);
-<a href=#163 id=163 data-nosnippet>163</a>      <span class="kw">let </span>decrypted = decrypted_message != <span class="number">0</span>;
+<a href=#163 id=163 data-nosnippet>163</a>      <span class="kw">let </span>decrypted = <span class="macro">decrypted_message !</span>= <span class="number">0</span>;
 <a href=#164 id=164 data-nosnippet>164</a>
 <a href=#165 id=165 data-nosnippet>165</a>      <span class="macro">assert_eq!</span>(plain, decrypted, <span class="string">"Identity function failed"</span>);
 <a href=#166 id=166 data-nosnippet>166</a>    }
@@ -177,7 +177,7 @@
 <a href=#177 id=177 data-nosnippet>177</a>    </span><span class="kw">let </span>not_func = |x: usize| <span class="number">1 </span>- x;
 <a href=#178 id=178 data-nosnippet>178</a>
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
-<a href=#180 id=180 data-nosnippet>180</a>      <span class="kw">let </span>plain = rng.gen::&lt;bool&gt;();
+<a href=#180 id=180 data-nosnippet>180</a>      <span class="kw">let </span>plain = rng.<span class="kw">gen</span>::&lt;bool&gt;();
 <a href=#181 id=181 data-nosnippet>181</a>      <span class="kw">let </span>message = <span class="kw">if </span>plain { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
 <a href=#182 id=182 data-nosnippet>182</a>      <span class="kw">let </span>encrypted = Ciphertext::encrypt_lwe_message(
 <a href=#183 id=183 data-nosnippet>183</a>        message,
@@ -188,7 +188,7 @@
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a>      <span class="kw">let </span>bootstrapped = bootstrap.bootstrap_func(<span class="kw-2">&amp;</span>encrypted, not_func, <span class="number">2</span>, <span class="kw-2">&amp;</span>cloud_key);
 <a href=#190 id=190 data-nosnippet>190</a>      <span class="kw">let </span>decrypted_message = bootstrapped.decrypt_lwe_message(<span class="number">2</span>, <span class="kw-2">&amp;</span>key.key_lv0);
-<a href=#191 id=191 data-nosnippet>191</a>      <span class="kw">let </span>decrypted = decrypted_message != <span class="number">0</span>;
+<a href=#191 id=191 data-nosnippet>191</a>      <span class="kw">let </span>decrypted = <span class="macro">decrypted_message !</span>= <span class="number">0</span>;
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>      <span class="macro">assert_eq!</span>(!plain, decrypted, <span class="string">"NOT function failed"</span>);
 <a href=#194 id=194 data-nosnippet>194</a>    }
@@ -205,7 +205,7 @@
 <a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">let </span>constant_true = |_x: usize| <span class="number">1</span>;
 <a href=#206 id=206 data-nosnippet>206</a>
 <a href=#207 id=207 data-nosnippet>207</a>    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
-<a href=#208 id=208 data-nosnippet>208</a>      <span class="kw">let </span>plain = rng.gen::&lt;bool&gt;();
+<a href=#208 id=208 data-nosnippet>208</a>      <span class="kw">let </span>plain = rng.<span class="kw">gen</span>::&lt;bool&gt;();
 <a href=#209 id=209 data-nosnippet>209</a>      <span class="kw">let </span>message = <span class="kw">if </span>plain { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
 <a href=#210 id=210 data-nosnippet>210</a>      <span class="kw">let </span>encrypted = Ciphertext::encrypt_lwe_message(
 <a href=#211 id=211 data-nosnippet>211</a>        message,
@@ -216,7 +216,7 @@
 <a href=#216 id=216 data-nosnippet>216</a>
 <a href=#217 id=217 data-nosnippet>217</a>      <span class="kw">let </span>bootstrapped = bootstrap.bootstrap_func(<span class="kw-2">&amp;</span>encrypted, constant_true, <span class="number">2</span>, <span class="kw-2">&amp;</span>cloud_key);
 <a href=#218 id=218 data-nosnippet>218</a>      <span class="kw">let </span>decrypted_message = bootstrapped.decrypt_lwe_message(<span class="number">2</span>, <span class="kw-2">&amp;</span>key.key_lv0);
-<a href=#219 id=219 data-nosnippet>219</a>      <span class="kw">let </span>decrypted = decrypted_message != <span class="number">0</span>;
+<a href=#219 id=219 data-nosnippet>219</a>      <span class="kw">let </span>decrypted = <span class="macro">decrypted_message !</span>= <span class="number">0</span>;
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a>      <span class="macro">assert!</span>(decrypted, <span class="string">"Constant true function failed"</span>);
 <a href=#222 id=222 data-nosnippet>222</a>    }
@@ -236,7 +236,7 @@
 <a href=#236 id=236 data-nosnippet>236</a>
 <a href=#237 id=237 data-nosnippet>237</a>    <span class="comment">// Test multiple inputs with the same LUT
 <a href=#238 id=238 data-nosnippet>238</a>    </span><span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
-<a href=#239 id=239 data-nosnippet>239</a>      <span class="kw">let </span>plain = rng.gen::&lt;bool&gt;();
+<a href=#239 id=239 data-nosnippet>239</a>      <span class="kw">let </span>plain = rng.<span class="kw">gen</span>::&lt;bool&gt;();
 <a href=#240 id=240 data-nosnippet>240</a>      <span class="kw">let </span>message = <span class="kw">if </span>plain { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
 <a href=#241 id=241 data-nosnippet>241</a>      <span class="kw">let </span>encrypted = Ciphertext::encrypt_lwe_message(
 <a href=#242 id=242 data-nosnippet>242</a>        message,
@@ -247,7 +247,7 @@
 <a href=#247 id=247 data-nosnippet>247</a>
 <a href=#248 id=248 data-nosnippet>248</a>      <span class="kw">let </span>bootstrapped = bootstrap.bootstrap_lut(<span class="kw-2">&amp;</span>encrypted, <span class="kw-2">&amp;</span>lut, <span class="kw-2">&amp;</span>cloud_key);
 <a href=#249 id=249 data-nosnippet>249</a>      <span class="kw">let </span>decrypted_message = bootstrapped.decrypt_lwe_message(<span class="number">2</span>, <span class="kw-2">&amp;</span>key.key_lv0);
-<a href=#250 id=250 data-nosnippet>250</a>      <span class="kw">let </span>decrypted = decrypted_message != <span class="number">0</span>;
+<a href=#250 id=250 data-nosnippet>250</a>      <span class="kw">let </span>decrypted = <span class="macro">decrypted_message !</span>= <span class="number">0</span>;
 <a href=#251 id=251 data-nosnippet>251</a>
 <a href=#252 id=252 data-nosnippet>252</a>      <span class="macro">assert_eq!</span>(!plain, decrypted, <span class="string">"LUT reuse failed"</span>);
 <a href=#253 id=253 data-nosnippet>253</a>    }
@@ -262,14 +262,15 @@
 <a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">let </span>key = key::SecretKey::new();
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="kw">let </span>cloud_key = key::CloudKey::new(<span class="kw-2">&amp;</span>key);
 <a href=#264 id=264 data-nosnippet>264</a>
-<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">let </span>plain = rng.gen::&lt;bool&gt;();
+<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">let </span>plain = rng.<span class="kw">gen</span>::&lt;bool&gt;();
 <a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">let </span>message = <span class="kw">if </span>plain { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
 <a href=#267 id=267 data-nosnippet>267</a>    <span class="kw">let </span>encrypted =
 <a href=#268 id=268 data-nosnippet>268</a>      Ciphertext::encrypt_lwe_message(message, <span class="number">2</span>, params::tlwe_lv0::ALPHA, <span class="kw-2">&amp;</span>key.key_lv0);
 <a href=#269 id=269 data-nosnippet>269</a>    <span class="kw">let </span>bootstrapped = bootstrap.bootstrap(<span class="kw-2">&amp;</span>encrypted, <span class="kw-2">&amp;</span>cloud_key);
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">let </span>decrypted_message = bootstrapped.decrypt_lwe_message(<span class="number">2</span>, <span class="kw-2">&amp;</span>key.key_lv0);
-<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>decrypted = decrypted_message != <span class="number">0</span>;
+<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>decrypted = <span class="macro">decrypted_message !</span>= <span class="number">0</span>;
 <a href=#272 id=272 data-nosnippet>272</a>
 <a href=#273 id=273 data-nosnippet>273</a>    <span class="macro">assert_eq!</span>(plain, decrypted);
 <a href=#274 id=274 data-nosnippet>274</a>  }
-<a href=#275 id=275 data-nosnippet>275</a>}</code></pre></div></section></main></body></html>
+<a href=#275 id=275 data-nosnippet>275</a>}
+</code></pre></div></section></main></body></html>
