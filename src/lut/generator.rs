@@ -124,7 +124,11 @@ impl Generator {
     }
 
     // Negate tail portion
-    for item in rotated.iter_mut().take(self.lookup_table_size).skip(self.lookup_table_size - offset) {
+    for item in rotated
+      .iter_mut()
+      .take(self.lookup_table_size)
+      .skip(self.lookup_table_size - offset)
+    {
       *item = item.wrapping_neg();
     }
 
@@ -183,7 +187,11 @@ impl Generator {
       *item = lut_raw[src_idx];
     }
 
-    for item in rotated.iter_mut().take(self.lookup_table_size).skip(self.lookup_table_size - offset) {
+    for item in rotated
+      .iter_mut()
+      .take(self.lookup_table_size)
+      .skip(self.lookup_table_size - offset)
+    {
       *item = item.wrapping_neg();
     }
 

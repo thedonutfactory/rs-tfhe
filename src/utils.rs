@@ -68,8 +68,7 @@ mod tests {
     normal_distr: &rand_distr::Normal<f64>,
     rng: &mut rand::rngs::ThreadRng,
   ) -> Vec<Torus> {
-    mu
-      .iter()
+    mu.iter()
       .map(|&e| gaussian_torus(e, normal_distr, rng))
       .collect()
   }

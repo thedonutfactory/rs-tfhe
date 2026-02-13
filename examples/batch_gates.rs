@@ -19,16 +19,16 @@ fn main() {
   println!();
 
   // Test data: 8 pairs of inputs
-    let test_pairs = [
-      (true, true),
-      (true, false),
-      (false, true),
-      (false, false),
-      (true, true),
-      (false, false),
-      (true, false),
-      (false, true),
-    ];
+  let test_pairs = [
+    (true, true),
+    (true, false),
+    (false, true),
+    (false, false),
+    (true, true),
+    (false, false),
+    (true, false),
+    (false, true),
+  ];
 
   println!("🧪 Testing with {} NAND gates", test_pairs.len());
   println!();
