@@ -119,9 +119,9 @@
 <a href=#119 id=119 data-nosnippet>119</a>  </span><span class="kw">fn </span>test_fft_ifft() {
 <a href=#120 id=120 data-nosnippet>120</a>    <span class="kw">const </span>N: usize = <span class="number">1024</span>;
 <a href=#121 id=121 data-nosnippet>121</a>    <span class="kw">let </span><span class="kw-2">mut </span>plan = FFTPlan::new(N);
-<a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rng();
 <a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">let </span><span class="kw-2">mut </span>a: [Torus; N] = [<span class="number">0</span>; N];
-<a href=#124 id=124 data-nosnippet>124</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;());
+<a href=#124 id=124 data-nosnippet>124</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;());
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">let </span>a_fft = plan.processor.ifft::&lt;N&gt;(<span class="kw-2">&amp;</span>a);
 <a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">let </span>res = plan.processor.fft::&lt;N&gt;(<span class="kw-2">&amp;</span>a_fft);
@@ -136,12 +136,12 @@
 <a href=#136 id=136 data-nosnippet>136</a>  </span><span class="kw">fn </span>test_fft_poly_mul() {
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">const </span>N: usize = <span class="number">1024</span>;
 <a href=#138 id=138 data-nosnippet>138</a>    <span class="kw">let </span><span class="kw-2">mut </span>plan = FFTPlan::new(N);
-<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rng();
 <a href=#140 id=140 data-nosnippet>140</a>    <span class="kw">let </span><span class="kw-2">mut </span>a: [Torus; N] = [<span class="number">0</span>; N];
 <a href=#141 id=141 data-nosnippet>141</a>    <span class="kw">let </span><span class="kw-2">mut </span>b: [Torus; N] = [<span class="number">0</span>; N];
-<a href=#142 id=142 data-nosnippet>142</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;());
+<a href=#142 id=142 data-nosnippet>142</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;());
 <a href=#143 id=143 data-nosnippet>143</a>    b.iter_mut()
-<a href=#144 id=144 data-nosnippet>144</a>      .for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;() % params::trgsw_lv1::BG <span class="kw">as </span>Torus);
+<a href=#144 id=144 data-nosnippet>144</a>      .for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;() % params::trgsw_lv1::BG <span class="kw">as </span>Torus);
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a>    <span class="kw">let </span>fft_res = plan.processor.poly_mul::&lt;N&gt;(<span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b);
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">let </span>res = poly_mul::&lt;N&gt;(<span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b);
@@ -180,9 +180,9 @@
 <a href=#180 id=180 data-nosnippet>180</a>  </span><span class="kw">fn </span>test_fft_ifft_1024() {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">const </span>N: usize = <span class="number">1024</span>;
 <a href=#182 id=182 data-nosnippet>182</a>    <span class="kw">let </span><span class="kw-2">mut </span>plan = FFTPlan::new(N);
-<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rng();
 <a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">let </span><span class="kw-2">mut </span>a = [<span class="number">0</span>; N];
-<a href=#185 id=185 data-nosnippet>185</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;());
+<a href=#185 id=185 data-nosnippet>185</a>    a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;());
 <a href=#186 id=186 data-nosnippet>186</a>
 <a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">let </span>a_fft = plan.processor.ifft::&lt;N&gt;(<span class="kw-2">&amp;</span>a);
 <a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">let </span>res = plan.processor.fft::&lt;N&gt;(<span class="kw-2">&amp;</span>a_fft);
@@ -213,13 +213,13 @@
 <a href=#213 id=213 data-nosnippet>213</a>  </span><span class="kw">fn </span>test_fft_poly_mul_1024() {
 <a href=#214 id=214 data-nosnippet>214</a>    <span class="kw">const </span>N: usize = <span class="number">1024</span>;
 <a href=#215 id=215 data-nosnippet>215</a>    <span class="kw">let </span><span class="kw-2">mut </span>plan = FFTPlan::new(N);
-<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rng();
 <a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">100 </span>{
 <a href=#218 id=218 data-nosnippet>218</a>      <span class="kw">let </span><span class="kw-2">mut </span>a = [<span class="number">0</span>; N];
 <a href=#219 id=219 data-nosnippet>219</a>      <span class="kw">let </span><span class="kw-2">mut </span>b = [<span class="number">0</span>; N];
-<a href=#220 id=220 data-nosnippet>220</a>      a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;());
+<a href=#220 id=220 data-nosnippet>220</a>      a.iter_mut().for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;());
 <a href=#221 id=221 data-nosnippet>221</a>      b.iter_mut()
-<a href=#222 id=222 data-nosnippet>222</a>        .for_each(|e| <span class="kw-2">*</span>e = rng.<span class="kw">gen</span>::&lt;Torus&gt;() % params::trgsw_lv1::BG <span class="kw">as </span>Torus);
+<a href=#222 id=222 data-nosnippet>222</a>        .for_each(|e| <span class="kw-2">*</span>e = rng.random::&lt;Torus&gt;() % params::trgsw_lv1::BG <span class="kw">as </span>Torus);
 <a href=#223 id=223 data-nosnippet>223</a>
 <a href=#224 id=224 data-nosnippet>224</a>      <span class="kw">let </span>fft_res = plan.processor.poly_mul::&lt;N&gt;(<span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b);
 <a href=#225 id=225 data-nosnippet>225</a>      <span class="kw">let </span>res = poly_mul::&lt;N&gt;(<span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b);
