@@ -74,7 +74,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: target
-        key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}-v2
 
     - name: Build
       run: cargo build --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
@@ -98,6 +98,7 @@ jobs:
     name: Test Feature Combinations
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         features:
           - ""

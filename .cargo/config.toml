@@ -1,21 +1,22 @@
 # Cargo configuration for optimized builds
 #
-# This configuration enables SIMD instructions on the target CPU:
-# - ARM64 (Apple Silicon): NEON instructions (~5% performance boost)
-# - x86_64: SSE/AVX (but we use hand-optimized assembly instead)
+# NOTE: `target-cpu=native` is intentionally NOT set here.
 #
-# Performance impact on ARM64:
-# - Without native: ~110ms per gate
-# - With native:    ~105ms per gate
-# - Improvement:    ~5%
-
-[build]
-# Enable native CPU features (NEON on ARM64, AVX on x86_64)
-rustflags = ["-C", "target-cpu=native"]
+# Baking it into the committed config makes every artifact non-portable: it
+# compiles for the exact CPU that produced it, so a binary built on one machine
+# can fail with SIGILL (illegal instruction) when run on another. In CI this
+# surfaced as cached `target/` directories, built on one runner, being restored
+# and executed on a different runner CPU.
+#
+# If you want the (~5%) native-CPU speedup for local benchmarking, opt in per
+# shell instead of committing it:
+#
+#   RUSTFLAGS="-C target-cpu=native" cargo bench
+#
+# or add an untracked `.cargo/config.toml` override outside the repo.
 
 [profile.release]
-# Aggressive optimizations for cryptographic performance
+# Aggressive optimizations for cryptographic performance (portable)
 lto = "fat"              # Link-time optimization (enables cross-crate optimizations)
 codegen-units = 1        # Single codegen unit (better optimization, slower compile)
 opt-level = 3            # Maximum optimization level
-

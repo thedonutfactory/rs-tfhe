@@ -166,7 +166,7 @@ impl PublicKeyLv0 {
   ///
   /// A TLWELv0 ciphertext encrypting the plaintext
   pub fn encrypt_f64(&self, plaintext: f64, alpha: f64) -> TLWELv0 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut result = TLWELv0::new();
 
     // Add the plaintext to b
@@ -176,9 +176,9 @@ impl PublicKeyLv0 {
     // Randomly combine encryptions of zero
     // This maintains semantic security while encrypting the plaintext
     for enc in &self.encryptions {
-      if rng.gen_bool(0.5) {
+      if rng.random_bool(0.5) {
         // Add or subtract randomly
-        if rng.gen_bool(0.5) {
+        if rng.random_bool(0.5) {
           for i in 0..=params::tlwe_lv0::N {
             result.p[i] = result.p[i].wrapping_add(enc.p[i]);
           }
@@ -192,7 +192,7 @@ impl PublicKeyLv0 {
 
     // Add fresh noise
     let normal_distr = rand_distr::Normal::new(0.0, alpha).unwrap();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let noise = crate::utils::gaussian_f64(0.0, &normal_distr, &mut rng);
     result.p[params::tlwe_lv0::N] = result.p[params::tlwe_lv0::N].wrapping_add(noise);
 
@@ -534,12 +534,12 @@ mod tests {
     let secret_key = SecretKey::new();
     let public_key = PublicKeyLv0::new(&secret_key.key_lv0);
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut correct = 0;
     let iterations = 100;
 
     for _ in 0..iterations {
-      let message = rng.gen_bool(0.5);
+      let message = rng.random_bool(0.5);
       let ct = public_key.encrypt_bool(message, params::tlwe_lv0::ALPHA);
       if ct.decrypt_bool(&secret_key.key_lv0) == message {
         correct += 1;
@@ -612,12 +612,12 @@ mod tests {
 
     let reenc_key = ProxyReencryptionKey::new_asymmetric(&alice_key.key_lv0, &bob_public_key);
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut correct = 0;
     let iterations = 100;
 
     for _ in 0..iterations {
-      let message = rng.gen_bool(0.5);
+      let message = rng.random_bool(0.5);
       let alice_ct = TLWELv0::encrypt_bool(message, params::tlwe_lv0::ALPHA, &alice_key.key_lv0);
       let bob_ct = reencrypt_tlwe_lv0(&alice_ct, &reenc_key);
 

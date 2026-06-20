@@ -76,14 +76,14 @@ mod tests {
 
   #[test]
   fn test_vanilla_bootstrap() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = VanillaBootstrap::new();
 
     let try_num = 10;
     for _i in 0..try_num {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let encrypted = Ciphertext::encrypt_bool(plain, params::tlwe_lv0::ALPHA, &key.key_lv0);
       let bootstrapped = bootstrap.bootstrap(&encrypted, &cloud_key);
       let decrypted = bootstrapped.decrypt_bool(&key.key_lv0);
@@ -107,14 +107,14 @@ mod tests {
     // The correctness of the operation is validated indirectly through
     // the mux() test and other tests that use this functionality.
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = VanillaBootstrap::new();
 
     // Test that the function runs without panicking
     for _ in 0..3 {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let encrypted = Ciphertext::encrypt_bool(plain, params::tlwe_lv0::ALPHA, &key.key_lv0);
 
       // Get intermediate result - we just verify it doesn't panic
@@ -128,11 +128,11 @@ mod tests {
     let bootstrap: Box<dyn Bootstrap> = Box::new(VanillaBootstrap::new());
     assert_eq!(bootstrap.name(), "vanilla");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
-    let plain = rng.gen::<bool>();
+    let plain = rng.random::<bool>();
     let encrypted = Ciphertext::encrypt_bool(plain, params::tlwe_lv0::ALPHA, &key.key_lv0);
     let bootstrapped = bootstrap.bootstrap(&encrypted, &cloud_key);
     let decrypted = bootstrapped.decrypt_bool(&key.key_lv0);

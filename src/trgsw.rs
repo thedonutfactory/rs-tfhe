@@ -372,7 +372,7 @@ mod tests {
   #[test]
   fn test_decomposition() {
     const N: usize = params::trgsw_lv1::N;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let cloud_key = key::CloudKey::new_no_ksk();
 
     // Generate 1024bits secret key
@@ -391,7 +391,7 @@ mod tests {
       let mut plain_text: Vec<bool> = Vec::new();
 
       for _j in 0..N {
-        let sample = rng.gen::<bool>();
+        let sample = rng.random::<bool>();
         plain_text.push(sample);
       }
 
@@ -426,7 +426,7 @@ mod tests {
   #[test]
   fn test_external_product_with_fft() {
     const N: usize = params::trgsw_lv1::N;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let cloud_key = key::CloudKey::new_no_ksk();
 
     // Generate 1024bits secret key
@@ -439,7 +439,7 @@ mod tests {
       let mut plain_text: Vec<bool> = Vec::new();
 
       for _j in 0..N {
-        let sample = rng.gen::<bool>();
+        let sample = rng.random::<bool>();
         plain_text.push(sample);
       }
 
@@ -468,7 +468,7 @@ mod tests {
   #[test]
   fn test_cmux() {
     const N: usize = params::trgsw_lv1::N;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new_no_ksk();
 
@@ -479,11 +479,11 @@ mod tests {
       let mut plain_text_2: Vec<bool> = Vec::new();
 
       for _j in 0..N {
-        let sample = rng.gen::<bool>();
+        let sample = rng.random::<bool>();
         plain_text_1.push(sample);
       }
       for _j in 0..N {
-        let sample = rng.gen::<bool>();
+        let sample = rng.random::<bool>();
         plain_text_2.push(sample);
       }
       const ALPHA: f64 = params::trgsw_lv1::ALPHA;
@@ -506,13 +506,13 @@ mod tests {
 
   #[test]
   fn test_blind_rotate() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
     let try_num = 10;
     for i in 0..try_num {
-      let plain_text = rng.gen::<bool>();
+      let plain_text = rng.random::<bool>();
 
       let tlwe = tlwe::TLWELv0::encrypt_bool(plain_text, params::tlwe_lv0::ALPHA, &key.key_lv0);
       let trlwe = blind_rotate(&tlwe, &cloud_key);
@@ -530,13 +530,13 @@ mod tests {
 
   #[test]
   fn test_identity_key_switching() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
     let try_num = 100;
     for _i in 0..try_num {
-      let plain_text = rng.gen::<bool>();
+      let plain_text = rng.random::<bool>();
 
       let tlwe_lv1 = tlwe::TLWELv1::encrypt_bool(plain_text, params::tlwe_lv1::ALPHA, &key.key_lv1);
       let tlwe_lv0 = identity_key_switching(&tlwe_lv1, &cloud_key.key_switching_key);
@@ -554,7 +554,7 @@ mod tests {
     println!("║        Batch Blind Rotate Benchmark - Scaling Test          ║");
     println!("╚══════════════════════════════════════════════════════════════╝\n");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
@@ -572,7 +572,7 @@ mod tests {
       // Generate random TLWE inputs
       let tlwes: Vec<_> = (0..n_blindrotate)
         .map(|_| {
-          let plain = rng.gen::<bool>();
+          let plain = rng.random::<bool>();
           tlwe::TLWELv0::encrypt_bool(plain, params::tlwe_lv0::ALPHA, &key.key_lv0)
         })
         .collect();

@@ -33,12 +33,12 @@ impl TRLWELv1 {
     key: &key::SecretKeyLv1,
     plan: &mut FFTPlan,
   ) -> TRLWELv1 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut trlwe = TRLWELv1::new();
-    trlwe.a.iter_mut().for_each(|e| *e = rng.gen());
+    trlwe.a.iter_mut().for_each(|e| *e = rng.random());
 
     let normal_distr = rand_distr::Normal::new(0.0, alpha).unwrap();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     trlwe.b = utils::gussian_f64_vec(p, &normal_distr, &mut rng)
       .try_into()
       .unwrap();
@@ -145,7 +145,7 @@ mod tests {
 
   #[test]
   fn test_trlwe_enc_and_dec() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Generate 1024bits secret key
     const N: usize = params::trlwe_lv1::N;
@@ -160,7 +160,7 @@ mod tests {
       let mut plain_text: Vec<bool> = Vec::new();
 
       for _j in 0..N {
-        let sample: bool = rng.gen::<bool>();
+        let sample: bool = rng.random::<bool>();
         plain_text.push(sample);
       }
 
@@ -188,7 +188,7 @@ mod tests {
 
   #[test]
   fn test_sample_extract_index() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Generate 1024bits secret key
     const N: usize = params::trlwe_lv1::N;
@@ -203,7 +203,7 @@ mod tests {
       let mut plain_text: Vec<bool> = Vec::new();
 
       for _j in 0..N {
-        let sample = rng.gen::<bool>();
+        let sample = rng.random::<bool>();
         plain_text.push(sample);
       }
 
