@@ -31,7 +31,7 @@ jobs:
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}-v2
 
     - name: Run benchmarks
-      run: cargo bench --features "lut-bootstrap"
+      run: cargo bench --bench gate_benchmarks --features "lut-bootstrap"
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
@@ -57,11 +57,11 @@ jobs:
       run: |
         # Run benchmarks on main branch
         git checkout main
-        cargo bench --features "lut-bootstrap" -- --save-baseline main
-        
+        cargo bench --bench gate_benchmarks --features "lut-bootstrap" -- --save-baseline main
+
         # Run benchmarks on PR branch
         git checkout ${{ github.head_ref }}
-        cargo bench --features "lut-bootstrap" -- --baseline main
+        cargo bench --bench gate_benchmarks --features "lut-bootstrap" -- --baseline main
 
     - name: Comment benchmark results
       uses: actions/github-script@v6
