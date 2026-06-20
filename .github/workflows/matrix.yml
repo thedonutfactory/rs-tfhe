@@ -74,7 +74,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: target
-        key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}-v2
 
     - name: Build
       run: cargo build --verbose --target ${{ matrix.target }} --features "${{ matrix.features }}"
