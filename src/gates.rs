@@ -161,25 +161,32 @@ impl Gates {
     tlwe_c: &Ciphertext,
     cloud_key: &CloudKey,
   ) -> Ciphertext {
-    // and(a, b)
+    // Reference TFHE MUX: keep the two AND results at level 1 (sample-extracted
+    // but NOT key-switched), sum them with the OR offset, and key-switch the
+    // level-1 result back down to level 0 once at the end.
+    use crate::trgsw::{blind_rotate, identity_key_switching};
+    use crate::trlwe::sample_extract_index;
+
+    // u1 = and(a, b), extracted at level 1
     let mut tlwe_and = tlwe_a + tlwe_b;
     *tlwe_and.b_mut() = tlwe_and.b().wrapping_add(utils::f64_to_torus(-0.125));
-    let u1: &Ciphertext = &self
-      .bootstrap
-      .bootstrap_without_key_switch(&tlwe_and, cloud_key);
+    let u1 = sample_extract_index(&blind_rotate(&tlwe_and, cloud_key), 0);
 
-    // and(not(a), c)
+    // u2 = and(not(a), c), extracted at level 1
     let mut tlwe_and_ny = &(self.not(tlwe_a)) + tlwe_c;
     *tlwe_and_ny.b_mut() = tlwe_and_ny.b().wrapping_add(utils::f64_to_torus(-0.125));
-    let u2: &Ciphertext = &self
-      .bootstrap
-      .bootstrap_without_key_switch(&tlwe_and_ny, cloud_key);
+    let u2 = sample_extract_index(&blind_rotate(&tlwe_and_ny, cloud_key), 0);
 
-    // or(u1, u2)
-    let mut tlwe_or = u1 + u2;
-    *tlwe_or.b_mut() = tlwe_or.b().wrapping_add(utils::f64_to_torus(0.125));
+    // or(u1, u2) at level 1: (0, 1/8) + u1 + u2
+    let mut tlwe_or = crate::tlwe::TLWELv1::new();
+    for (i, slot) in tlwe_or.p.iter_mut().enumerate() {
+      *slot = u1.p[i].wrapping_add(u2.p[i]);
+    }
+    let b_idx = tlwe_or.p.len() - 1;
+    tlwe_or.p[b_idx] = tlwe_or.p[b_idx].wrapping_add(utils::f64_to_torus(0.125));
 
-    self.bootstrap.bootstrap(&tlwe_or, cloud_key)
+    // Single key switch back to level 0
+    identity_key_switching(&tlwe_or, &cloud_key.key_switching_key)
   }
 
   /// Homomorphic MUX gate (naive version)
@@ -654,29 +661,39 @@ mod tests {
 
   #[test]
   fn test_mux() {
-    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let gates = Gates::new();
 
-    let try_num = 10;
-    for _i in 0..try_num {
-      let plain_a = rng.random::<bool>();
-      let plain_b = rng.random::<bool>();
-      let plain_c = rng.random::<bool>();
-      let expected = (plain_a & plain_b) | ((!plain_a) & plain_c);
+    // Exercise every input combination for both the optimized `mux` and the
+    // basic-gate `mux_naive`. Both must agree with the plaintext MUX on all
+    // inputs (a regression guard: the optimized path was once ~50% wrong).
+    for &plain_a in &[false, true] {
+      for &plain_b in &[false, true] {
+        for &plain_c in &[false, true] {
+          let expected = (plain_a & plain_b) | ((!plain_a) & plain_c);
 
-      let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_b = Ciphertext::encrypt_bool(plain_b, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_c = Ciphertext::encrypt_bool(plain_c, params::tlwe_lv0::ALPHA, &key.key_lv0);
-      let tlwe_op = gates.mux_naive(&tlwe_a, &tlwe_b, &tlwe_c, &cloud_key);
-      let dec = tlwe_op.decrypt_bool(&key.key_lv0);
-      dbg!(plain_a);
-      dbg!(plain_b);
-      dbg!(plain_c);
-      dbg!(expected);
-      dbg!(dec);
-      assert_eq!(expected, dec);
+          let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
+          let tlwe_b = Ciphertext::encrypt_bool(plain_b, params::tlwe_lv0::ALPHA, &key.key_lv0);
+          let tlwe_c = Ciphertext::encrypt_bool(plain_c, params::tlwe_lv0::ALPHA, &key.key_lv0);
+
+          let dec_mux = gates
+            .mux(&tlwe_a, &tlwe_b, &tlwe_c, &cloud_key)
+            .decrypt_bool(&key.key_lv0);
+          assert_eq!(
+            expected, dec_mux,
+            "mux({plain_a},{plain_b},{plain_c}) wrong"
+          );
+
+          let dec_naive = gates
+            .mux_naive(&tlwe_a, &tlwe_b, &tlwe_c, &cloud_key)
+            .decrypt_bool(&key.key_lv0);
+          assert_eq!(
+            expected, dec_naive,
+            "mux_naive({plain_a},{plain_b},{plain_c}) wrong"
+          );
+        }
+      }
     }
   }
 
