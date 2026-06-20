@@ -140,7 +140,7 @@ mod tests {
 
   #[test]
   fn test_identity_function() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = LutBootstrap::new();
@@ -149,7 +149,7 @@ mod tests {
     let identity = |x: usize| x;
 
     for _ in 0..5 {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let message = if plain { 1 } else { 0 };
       let encrypted = Ciphertext::encrypt_lwe_message(
         message,
@@ -168,7 +168,7 @@ mod tests {
 
   #[test]
   fn test_not_function() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = LutBootstrap::new();
@@ -177,7 +177,7 @@ mod tests {
     let not_func = |x: usize| 1 - x;
 
     for _ in 0..5 {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let message = if plain { 1 } else { 0 };
       let encrypted = Ciphertext::encrypt_lwe_message(
         message,
@@ -196,7 +196,7 @@ mod tests {
 
   #[test]
   fn test_constant_function() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = LutBootstrap::new();
@@ -205,7 +205,7 @@ mod tests {
     let constant_true = |_x: usize| 1;
 
     for _ in 0..5 {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let message = if plain { 1 } else { 0 };
       let encrypted = Ciphertext::encrypt_lwe_message(
         message,
@@ -224,7 +224,7 @@ mod tests {
 
   #[test]
   fn test_lut_reuse() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let bootstrap = LutBootstrap::new();
@@ -236,7 +236,7 @@ mod tests {
 
     // Test multiple inputs with the same LUT
     for _ in 0..5 {
-      let plain = rng.gen::<bool>();
+      let plain = rng.random::<bool>();
       let message = if plain { 1 } else { 0 };
       let encrypted = Ciphertext::encrypt_lwe_message(
         message,
@@ -258,11 +258,11 @@ mod tests {
     let bootstrap: Box<dyn Bootstrap> = Box::new(LutBootstrap::new());
     assert_eq!(bootstrap.name(), "lut");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
-    let plain = rng.gen::<bool>();
+    let plain = rng.random::<bool>();
     let message = if plain { 1 } else { 0 };
     let encrypted =
       Ciphertext::encrypt_lwe_message(message, 2, params::tlwe_lv0::ALPHA, &key.key_lv0);

@@ -95,10 +95,10 @@ fn bench_fft_operations(c: &mut Criterion) {
   use rs_tfhe::fft::FFTPlan;
   use rs_tfhe::fft::FFTProcessor;
   let mut plan = FFTPlan::new(1024);
-  let mut rng = rand::thread_rng();
+  let mut rng = rand::rng();
 
   let mut input = [0u32; 1024];
-  input.iter_mut().for_each(|e| *e = rng.gen::<u32>());
+  input.iter_mut().for_each(|e| *e = rng.random::<u32>());
 
   let freq = plan.processor.ifft::<1024>(&input);
 

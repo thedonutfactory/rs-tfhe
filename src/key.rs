@@ -31,7 +31,7 @@ impl Default for SecretKey {
 
 impl SecretKey {
   pub fn new() -> Self {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut key = SecretKey {
       key_lv0: [ZERO_TORUS; params::tlwe_lv0::N],
       key_lv1: [ZERO_TORUS; params::tlwe_lv1::N],
@@ -39,11 +39,11 @@ impl SecretKey {
     key
       .key_lv0
       .iter_mut()
-      .for_each(|e| *e = rng.gen::<bool>() as Torus);
+      .for_each(|e| *e = rng.random::<bool>() as Torus);
     key
       .key_lv1
       .iter_mut()
-      .for_each(|e| *e = rng.gen::<bool>() as Torus);
+      .for_each(|e| *e = rng.random::<bool>() as Torus);
     key
   }
 }

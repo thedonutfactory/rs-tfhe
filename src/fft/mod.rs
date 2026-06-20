@@ -119,9 +119,9 @@ mod tests {
   fn test_fft_ifft() {
     const N: usize = 1024;
     let mut plan = FFTPlan::new(N);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut a: [Torus; N] = [0; N];
-    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
+    a.iter_mut().for_each(|e| *e = rng.random::<Torus>());
 
     let a_fft = plan.processor.ifft::<N>(&a);
     let res = plan.processor.fft::<N>(&a_fft);
@@ -136,12 +136,12 @@ mod tests {
   fn test_fft_poly_mul() {
     const N: usize = 1024;
     let mut plan = FFTPlan::new(N);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut a: [Torus; N] = [0; N];
     let mut b: [Torus; N] = [0; N];
-    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
+    a.iter_mut().for_each(|e| *e = rng.random::<Torus>());
     b.iter_mut()
-      .for_each(|e| *e = rng.gen::<Torus>() % params::trgsw_lv1::BG as Torus);
+      .for_each(|e| *e = rng.random::<Torus>() % params::trgsw_lv1::BG as Torus);
 
     let fft_res = plan.processor.poly_mul::<N>(&a, &b);
     let res = poly_mul::<N>(&a, &b);
@@ -180,9 +180,9 @@ mod tests {
   fn test_fft_ifft_1024() {
     const N: usize = 1024;
     let mut plan = FFTPlan::new(N);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut a = [0; N];
-    a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
+    a.iter_mut().for_each(|e| *e = rng.random::<Torus>());
 
     let a_fft = plan.processor.ifft::<N>(&a);
     let res = plan.processor.fft::<N>(&a_fft);
@@ -213,13 +213,13 @@ mod tests {
   fn test_fft_poly_mul_1024() {
     const N: usize = 1024;
     let mut plan = FFTPlan::new(N);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _i in 0..100 {
       let mut a = [0; N];
       let mut b = [0; N];
-      a.iter_mut().for_each(|e| *e = rng.gen::<Torus>());
+      a.iter_mut().for_each(|e| *e = rng.random::<Torus>());
       b.iter_mut()
-        .for_each(|e| *e = rng.gen::<Torus>() % params::trgsw_lv1::BG as Torus);
+        .for_each(|e| *e = rng.random::<Torus>() % params::trgsw_lv1::BG as Torus);
 
       let fft_res = plan.processor.poly_mul::<N>(&a, &b);
       let res = poly_mul::<N>(&a, &b);

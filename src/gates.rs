@@ -654,16 +654,16 @@ mod tests {
 
   #[test]
   fn test_mux() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
     let gates = Gates::new();
 
     let try_num = 10;
     for _i in 0..try_num {
-      let plain_a = rng.gen::<bool>();
-      let plain_b = rng.gen::<bool>();
-      let plain_c = rng.gen::<bool>();
+      let plain_a = rng.random::<bool>();
+      let plain_b = rng.random::<bool>();
+      let plain_c = rng.random::<bool>();
       let expected = (plain_a & plain_b) | ((!plain_a) & plain_c);
 
       let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
@@ -788,12 +788,12 @@ mod tests {
     let gates = Gates::with_bootstrap(Box::new(VanillaBootstrap::new()));
     assert_eq!(gates.bootstrap_strategy(), "vanilla");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key = key::SecretKey::new();
     let cloud_key = key::CloudKey::new(&key);
 
-    let plain_a = rng.gen::<bool>();
-    let plain_b = rng.gen::<bool>();
+    let plain_a = rng.random::<bool>();
+    let plain_b = rng.random::<bool>();
     let expected = plain_a & plain_b;
 
     let tlwe_a = Ciphertext::encrypt_bool(plain_a, params::tlwe_lv0::ALPHA, &key.key_lv0);
