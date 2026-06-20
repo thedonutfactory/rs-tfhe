@@ -404,15 +404,15 @@ mod tests {
       let c_decomp = decomposition(&c, &cloud_key);
       let h_u32 = utils::f64_to_torus_vec(&h);
       let mut res = trlwe::TRLWELv1::new();
-      for j in 0..N {
+      for (j, (a, b)) in res.a.iter_mut().zip(res.b.iter_mut()).enumerate() {
         let mut tmp0: Torus = 0;
         let mut tmp1: Torus = 0;
         for k in 0..params::trgsw_lv1::L {
           tmp0 = tmp0.wrapping_add(c_decomp[k][j].wrapping_mul(h_u32[k]));
           tmp1 = tmp1.wrapping_add(c_decomp[k + params::trgsw_lv1::L][j].wrapping_mul(h_u32[k]));
         }
-        res.a[j] = tmp0;
-        res.b[j] = tmp1;
+        *a = tmp0;
+        *b = tmp1;
       }
 
       let dec = res.decrypt_bool(&key.key_lv1, &mut plan);
