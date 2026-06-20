@@ -50,7 +50,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.features }}
+        key: ${{ runner.os }}-cargo-build-target-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Check formatting
       if: matrix.rust == 'stable'
